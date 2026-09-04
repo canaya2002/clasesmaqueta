@@ -25,6 +25,7 @@ export type BudgetKey =
   | 'settings'
   | 'boot-digest'
   | 'progress'
+  | 'ledger'
   | 'hearts'
   | 'gamification'
   | 'branding'
@@ -41,6 +42,11 @@ export const BUDGET: Readonly<Record<BudgetKey, number>> = {
   settings: 512,
   'boot-digest': 512,
   progress: 300_000,
+  // El log de hechos del usuario actual. Clave propia y fuera del desalojo: compartirla con `progress`
+  // —que ya tiene el 46% ocupado por el log de intentos— hace que `write` rechace la escritura ENTERA al
+  // pasarse, sin escribir y sin que nadie lea el resultado. El HUD se movería en memoria durante la sesión
+  // y un F5 lo borraría, que es justo el gesto con el que se demuestra que la demo persiste.
+  ledger: 200_000,
   // Tamano fijo: un solo objeto de seis numeros. Va aparte de `progress` porque se escribe con otra
   // cadencia y porque no puede compartir destino de desalojo con el registro de intentos.
   hearts: 512,
@@ -71,7 +77,7 @@ export const EVICTION_ORDER: readonly BudgetKey[] = [
 ];
 
 /** Claves que NUNCA se desalojan: sin ellas la demo no arranca. */
-const NEVER_EVICT: readonly BudgetKey[] = ['meta', 'settings', 'boot-digest', 'progress', 'hearts'];
+const NEVER_EVICT: readonly BudgetKey[] = ['meta', 'settings', 'boot-digest', 'progress', 'ledger', 'hearts'];
 
 export type Store = 'local' | 'session';
 
@@ -169,6 +175,7 @@ const BUDGET_KEYS = [
   'settings',
   'boot-digest',
   'progress',
+  'ledger',
   'hearts',
   'gamification',
   'branding',
