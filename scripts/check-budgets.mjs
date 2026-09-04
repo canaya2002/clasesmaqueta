@@ -18,6 +18,21 @@ if (!existsSync(NEXT)) {
   process.exit(1);
 }
 
+/*
+ * `pnpm dev` escribe en el MISMO `.next` que `pnpm build`.
+ *
+ * Con el servidor de desarrollo levantado, este script mide los chunks de dev: sin minificar, troceados de
+ * otra forma, y —lo que lo vuelve peligroso— MÁS PEQUEÑOS en el manifiesto, porque el grueso llega por HMR.
+ * El resultado es que las tres rutas miden lo mismo y todos los presupuestos pasan. Un presupuesto que
+ * aprueba por accidente es peor que no tenerlo: da por medido lo que dejó de medirse.
+ */
+if (existsSync(join(NEXT, 'static', 'development'))) {
+  console.error(
+    'check-budgets: `.next` contiene un build de DESARROLLO. Detén `pnpm dev` y corre `pnpm build` antes de medir.',
+  );
+  process.exit(1);
+}
+
 function gzipKb(file) {
   if (!existsSync(file)) return 0;
   return gzipSync(readFileSync(file)).length / 1024;

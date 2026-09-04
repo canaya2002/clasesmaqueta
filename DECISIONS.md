@@ -666,3 +666,84 @@ raíz.** Cada `meta` pesa unos 5 KB comprimidos y solo el reproductor necesita p
   viaja dentro del intento, así que la analítica de la Fase 8 no podrá separar los dos casos en el embudo.
 - **La ruta interceptada** `(app)/@player/(.)leccion/[lessonId]`. La ruta real ya existe y es la que resuelve
   un enlace profundo; la interceptación necesita el mapa, que es Fase 5.
+
+---
+
+## 10. Variedad de dinámicas en el catálogo (hallazgo posterior a la Fase 4)
+
+Al abrir la app en el navegador para enseñarla, verifiqué los ids de lección y salió esto: **los ~2,100
+ejercicios del catálogo eran todos `multiple-choice`**. `src/mock/content.ts` tenía el tipo fijo en el
+generador. Seis de las siete dinámicas construidas eran inalcanzables desde la aplicación.
+
+Compilaba, las 368 pruebas pasaban y la app arrancaba. El argumento central del proyecto —añadir una
+dinámica es un archivo y una línea— no se podía *ver* funcionando, que en una maqueta es el fallo que
+importa. **Un catálogo que no se recorre entero no está probado.**
+
+**H51 · El reparto de tipos no puede ser aleatorio.** Cada dinámica mide algo distinto y va donde ese algo
+importa: reconocimiento (`multiple-choice`, `true-false-swipe`) para calentar, discriminación
+(`multiple-select`, `match-pairs`) en medio, recuerdo y producción (`fill-blank`, `word-bank`) donde duele,
+y `order-sequence` **solo** en `test` y `checkpoint`, que es donde se evalúa un procedimiento. El plan rota
+por lección para que "el paso 4 siempre es relacionar" no se aprenda en dos lecciones.
+
+**H52 · Dos dinámicas no se pueden derivar del corpus.** `true-false`, `match-pairs`, `multiple-select` y
+`word-bank` salen de un hecho que ya trae sujeto, acción correcta y tres incorrectas. Ordenar y completar el
+hueco necesitan contenido que no existía: un procedimiento cuyo orden sea defendible y una frase cuyo
+contexto determine UNA respuesta. Se escribió: `src/content/seed/procedures.ts`, 26 unidades.
+
+**H53 · Los topes se midieron antes de fijarlos.** La mediana de la respuesta correcta en el corpus son 9
+palabras (mín. 4, máx. 15). Con techo de 10 fichas entra el 80% de los hechos en armar-la-frase; los seis
+más largos caen a opción múltiple. `match-pairs` filtra por longitud en las dos columnas: dos columnas de
+celdas de quince palabras dejan de ser un ejercicio de relacionar y pasan a ser lectura comparada.
+
+**H54 · "El orden debe ser defendible" se cumplió haciendo trampa.** Pedí que ningún par de pasos
+consecutivos fuera intercambiable, y los editores lo lograron metiendo la justificación DENTRO de cada
+ficha: *"decir que esa evaluación la hace un abogado, ya descartada la detención en curso"*. Es el mismo
+fraude que un revisor había señalado en un solo caso (`"antes de firmar"`), repartido por todo el
+contenido — el alumno reconstruye el orden siguiendo las referencias cruzadas, sin saber nada del trabajo.
+Y de paso 105 de 147 pasos pasaron de 10 palabras. **La ficha es una acción autocontenida; la justificación
+vive en `procedureWhy`, que se lee después de contestar.** Mediana final: 8 palabras, máximo 9.
+
+**H55 · Los sinónimos con y sin acento son dato muerto.** `normalizeAnswer` pliega diacríticos antes de
+comparar, así que aceptar "jurídica" y "juridica" no añade cobertura: la aparenta. Peor con los números,
+donde `NUMBER_WORDS` mapea "dos" a "2" y las dos formas colapsan. La prueba compara los sinónimos YA
+normalizados, lo que además caza el caso real de creer que añadiste un sinónimo y no haberlo hecho.
+
+**H56 · `pnpm dev` y `pnpm build` escriben en el MISMO `.next`, y el presupuesto midió el build de dev.**
+Las tres rutas midieron 27.5 KB idénticos y **todos los presupuestos pasaron**. Es la segunda vez en dos
+días que un presupuesto aprueba por accidente (la primera fue medir 0 KB por el grupo de rutas). El script
+ahora se niega a correr si encuentra `.next/static/development`.
+
+### Las pruebas que quedan como red
+
+`step-variety.test.ts` recorre el catálogo entero, los 2,090 ejercicios, y afirma cuatro cosas: que las
+siete dinámicas aparecen, que `multiple-choice` no pasa del 45%, que cada dinámica está en al menos 30
+lecciones distintas, y que los 2,090 `data` generados pasan `prepareStep` **sin un solo defecto** — un
+`data` que no valida se ve en la app como la tarjeta "este ejercicio necesita una corrección", a mitad de
+lección y delante del cliente.
+
+La cobertura se mide en LECCIONES y no en porcentaje de pasos, y el matiz es la decisión: `order-sequence`
+es el 1.8% del catálogo y está bien, porque solo aparece en las 37 lecciones de `test` y `checkpoint`, una
+vez en cada una, porque hay UN procedimiento escrito por unidad. Subirlo repetiría el mismo ejercicio dentro
+de la unidad, que es peor que ser escaso.
+
+`procedures.test.ts` audita el contenido escrito, que no tiene la red del generado: completitud de las 26
+unidades, un solo hueco por frase, la respuesta canónica de una o dos palabras, ningún paso de más de 10
+palabras, ningún paso que apunte hacia atrás a otro, sinónimos que no colapsen al normalizar, y —la que más
+importa— **que la respuesta no aparezca ya escrita en la propia frase**.
+
+### Distribución final
+
+| Dinámica | Pasos | % | Lecciones |
+| --- | ---: | ---: | ---: |
+| `multiple-choice` | 804 | 38.5% | 190 |
+| `true-false-swipe` | 343 | 16.4% | 190 |
+| `match-pairs` | 339 | 16.2% | 182 |
+| `multiple-select` | 299 | 14.3% | 190 |
+| `word-bank` | 148 | 7.1% | 148 |
+| `fill-blank` | 120 | 5.7% | 109 |
+| `order-sequence` | 37 | 1.8% | 37 |
+
+**D26 · El presupuesto del reproductor sube de 250 a 275 KB, con la razón escrita.** Con red cero el
+catálogo ES la app: corpus, procedimientos y frases con hueco se materializan en el cliente y viajan con la
+ruta por diseño. El motor de crecimiento a vigilar es otro —el barril de `meta`, ~5 KB comprimidos por
+dinámica— y el techo sigue puesto para que la dinámica 12 lo reviente y obligue a decidir.

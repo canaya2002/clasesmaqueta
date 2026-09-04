@@ -15,7 +15,9 @@ import type { Course, Lesson, RawStep, Section, Unit } from '@/content/engine/sc
 import { courseSchema } from '@/content/engine/schema';
 import { asId, text, type Json } from '@/content/engine/primitives';
 import { COURSES, LESSONS, lessonsOfUnit, SECTIONS } from '@/content/seed/catalog';
-import { UNITS, type Fact } from '@/content/seed/corpus';
+import { UNITS, type Fact, type UnitTopic } from '@/content/seed/corpus';
+import { dataFor, typeAt, type StepType } from './steps';
+import { clozeAt, extrasFor } from '@/content/seed/procedures';
 
 const NS_STEP = 0x5e11c001;
 const NS_OPT = 0x5e11c002;
@@ -90,28 +92,55 @@ function buildOptions(fact: Fact, template: Template, salt: number): Built {
   };
 }
 
+/**
+ * La explicación tiene que hablar del ejercicio que el alumno acaba de contestar.
+ *
+ * Ordenar un procedimiento y completar un hueco NO salen del hecho: salen del contenido escrito por unidad.
+ * Dejar la explicación del hecho ahí produce el peor error de contenido posible — una justificación que
+ * suena razonable y no corresponde a lo que se preguntó.
+ */
+function explanationFor(type: StepType, fact: Fact, unit: UnitTopic, clozeIndex: number): string {
+  if (type === 'order-sequence') return extrasFor(unit.slug).procedureWhy;
+  if (type === 'fill-blank') return clozeAt(unit.slug, clozeIndex).why;
+  return fact.explanation;
+}
+
 function stepIdFor(lessonOrdinal: number, index: number): string {
   return `stp_${mix32(NS_STEP, lessonOrdinal, index).toString(32).padStart(8, '0').slice(-8)}`;
 }
 
-function buildStep(lessonOrdinal: number, index: number, fact: Fact, template: Template): RawStep {
+function buildStep(
+  lessonOrdinal: number,
+  index: number,
+  fact: Fact,
+  template: Template,
+  want: StepType,
+  ctx: { readonly unit: UnitTopic; readonly neighbours: readonly Fact[]; readonly clozeIndex: number },
+): RawStep {
   const salt = mix32(NS_STEP, lessonOrdinal, index) % 100000;
-  const built = buildOptions(fact, template, salt);
 
-  const data: Json = {
-    prompt: built.promptText,
-    options: built.options.map((o) => ({ id: o.id, text: o.text })),
-    correctOptionId: built.correctId,
-    shuffle: true,
-    figure: null,
-  };
+  // El tipo pedido puede no ser construible con ESTE hecho —una respuesta de quince palabras no da un
+  // ejercicio de armar la frase—, y entonces se cae a opción múltiple. Es una degradación declarada: el
+  // reparto es una intención, no una promesa que el corpus pueda no poder cumplir.
+  const special = want === 'multiple-choice' ? null : dataFor(want, { unit: ctx.unit, fact, neighbours: ctx.neighbours, salt, clozeIndex: ctx.clozeIndex });
+  const type: StepType = special === null ? 'multiple-choice' : want;
+
+  const built = buildOptions(fact, template, salt);
+  const data: Json =
+    special ?? {
+      prompt: built.promptText,
+      options: built.options.map((o) => ({ id: o.id, text: o.text })),
+      correctOptionId: built.correctId,
+      shuffle: true,
+      figure: null,
+    };
 
   return {
     id: asId<'StepId'>(stepIdFor(lessonOrdinal, index)),
-    type: 'multiple-choice',
+    type,
     data,
     hint: index % 4 === 0 ? text('Piensa en qué queda registrado y quién lo va a leer después.') : null,
-    explanation: text(fact.explanation),
+    explanation: text(explanationFor(type, fact, ctx.unit, ctx.clozeIndex)),
     xpWeight: index % 5 === 0 ? 2 : 1,
     assessmentWeight: fact.legal ? 3 : index % 3 === 0 ? 2 : 1,
     skills: [asId<'SkillId'>(fact.skill)],
@@ -130,7 +159,14 @@ function buildLesson(unitIndex: number, lessonOrdinal: number, localIndex: numbe
     const fact = unit.facts[factIndex];
     if (fact === undefined) continue;
     const template = templateAt(localIndex + i);
-    steps.push(buildStep(lessonOrdinal, i, fact, template));
+    const want = typeAt(meta.kind, localIndex, i);
+    steps.push(
+      buildStep(lessonOrdinal, i, fact, template, want, {
+        unit,
+        neighbours: unit.facts,
+        clozeIndex: localIndex + i,
+      }),
+    );
   }
 
   const first = steps[0];
