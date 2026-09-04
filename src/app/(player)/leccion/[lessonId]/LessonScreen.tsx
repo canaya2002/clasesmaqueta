@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LessonShell } from '@/components/game/LessonShell';
 // El barril de metadatos de las dinamicas. Va AQUI y no en el layout raiz: cada `meta` pesa unos 5 KB
 // comprimidos, y el reproductor es la unica pantalla que necesita poder montar cualquier tipo de ejercicio.
 import '@/content/dynamics/index';
 import { createSessionRuntime } from '@/mock/runtime';
+import { recordLesson } from '@/mock/actions';
+import { unitOf } from '@/mock/content-index';
 import { lessonById } from '@/mock/repo/courses';
 import { DEFAULT_ECONOMY } from '@/content/engine/economy';
 import type { Lesson } from '@/content/engine/schema';
@@ -25,6 +27,26 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
   // El runtime se crea UNA vez por montaje: recrearlo en cada render volvería a tomar el snapshot de
   // corazones y el efecto de comandos del shell se re-dispararía con cada tick del contador.
   const runtime = useMemo(() => createSessionRuntime({ econ }), [econ]);
+
+  const onFinish = useCallback(
+    (result: LessonResult): void => {
+      if (load.kind !== 'ready') return;
+      // Se busca la unidad a la que pertenece la lección: el evento la necesita para saber cuándo una
+      // unidad queda completa, y el reproductor recibe la lección suelta.
+      const unitId = unitOf(load.lesson.id);
+      if (unitId === null) return;
+      recordLesson(econ, {
+        lessonId: load.lesson.id,
+        unitId,
+        difficulty: load.lesson.difficulty,
+        result,
+        // El modo práctica sin corazones NO cuenta para progreso, y la decisión viaja congelada en el
+        // evento: se activa a mitad de lección, así que solo el evento sabe bajo qué reglas se jugó.
+        countsForProgress: runtime.awardsProgress,
+      });
+    },
+    [load, econ, runtime.awardsProgress],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -75,10 +97,6 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
       </main>
     );
   }
-
-  const onFinish = (result: LessonResult): void => {
-    void result;
-  };
 
   return (
     <LessonShell

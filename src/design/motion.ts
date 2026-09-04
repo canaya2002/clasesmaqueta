@@ -11,6 +11,7 @@
  */
 
 import type { TargetAndTransition, Transition, Variant, Variants } from 'motion/react';
+import type { AssertComplete } from '@/lib/brand';
 
 /* ----------------------------------------------------------------- springs */
 
@@ -288,25 +289,84 @@ function lastNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-function degradeState(state: Variant): TargetAndTransition {
+/** Último valor de una propiedad, sea número, cadena con unidad, o el final de una serie de fotogramas. */
+function lastValue(raw: unknown): number | string | undefined {
+  if (typeof raw === 'number' || typeof raw === 'string') return raw;
+  if (Array.isArray(raw)) {
+    const last: unknown = raw[raw.length - 1];
+    if (typeof last === 'number' || typeof last === 'string') return last;
+  }
+  return undefined;
+}
+
+/**
+ * Las propiedades que dicen DÓNDE está el elemento, no cuánto se enfatiza.
+ *
+ * Es la distinción que faltaba. Un degradado que solo conserva `opacity` deja `feedbackCorrect` con sus
+ * dos estados idénticos, y como el estado cerrado del panel es `y: '110%'`, perder esa propiedad significa
+ * que **el panel de feedback se queda siempre visible** — y `drawerRight` que el cajón nunca se esconde, y
+ * `sectionFill` que la sección nace llena. Con movimiento reducido, "no animar" no puede convertirse en
+ * "no colocar".
+ */
+const GEOMETRY_KEYS = ['x', 'y', 'scale', 'scaleX', 'scaleY'] as const;
+
+function degradeState(state: Variant, keepGeometry: boolean): TargetAndTransition {
   const out: TargetAndTransition = { transition: REDUCED_FADE };
   if (typeof state === 'function') return out;
+
   const opacity = lastNumber(state.opacity);
   if (opacity !== undefined) out.opacity = opacity;
   const pathLength = lastNumber(state.pathLength);
   if (pathLength !== undefined) out.pathLength = pathLength;
+
+  if (keepGeometry) {
+    const target: Record<string, unknown> = { ...state };
+    for (const key of GEOMETRY_KEYS) {
+      const value = lastValue(target[key]);
+      // Se conserva el valor FINAL, sin fotogramas intermedios: llegar al destino sin recorrerlo.
+      if (value !== undefined) out[key] = value;
+    }
+  }
   return out;
 }
 
-function degradeVariants(v: Variants): Variants {
+/**
+ * Los canales que colocan y los que enfatizan.
+ *
+ * `entrance` y `continuity` mueven cosas de sitio o las traen a escena: su geometría es información y
+ * sobrevive al degradado. `emphasis` y `ambient` solo subrayan: su geometría ES el énfasis, y quitarla es
+ * exactamente lo que pide `prefers-reduced-motion`.
+ */
+function placesContent(channel: MotionChannel): boolean {
+  return channel === 'entrance' || channel === 'continuity';
+}
+
+function degradeVariants(v: Variants, keepGeometry: boolean): Variants {
   const out: Variants = {};
   for (const stateName of Object.keys(v)) {
     const state = v[stateName];
     if (state === undefined) continue;
-    out[stateName] = degradeState(state);
+    out[stateName] = degradeState(state, keepGeometry);
   }
   return out;
 }
+
+/**
+ * Los nombres del catálogo, como TUPLA.
+ *
+ * `Object.keys(CATALOG)` devuelve `string[]` y forzarlo a `VariantName[]` es un cast prohibido. La tupla
+ * más la comprobación de completitud da lo mismo sin mentir: añadir una variante al catálogo sin añadirla
+ * aquí NO compila, que es justo lo que hace útil a la lista.
+ */
+export const VARIANT_NAMES = [
+  'feedbackCorrect', 'feedbackWrong', 'shakeX', 'comboPulse', 'breathe', 'startBubble', 'clunk',
+  'sectionFill', 'lessonOverlay', 'counterDigit', 'progressAdvance', 'optionPick', 'pairSolved',
+  'itemGrab', 'revealIn', 'stampIn', 'routeEnter', 'navActive', 'modalIn', 'drawerRight', 'spotlightIn',
+  'shimmer', 'rowHover', 'previewPulse',
+] as const satisfies readonly VariantName[];
+
+const _variantNamesComplete: AssertComplete<(typeof VARIANT_NAMES)[number], VariantName> = true;
+void _variantNamesComplete;
 
 const reducedCache = new Map<VariantName, Variants>();
 
@@ -325,7 +385,7 @@ export function resolveVariant(name: VariantName, reduced: boolean): Variants {
   if (!reduced) return spec.full;
   const hit = reducedCache.get(name);
   if (hit !== undefined) return hit;
-  const built = spec.reduced ?? degradeVariants(spec.full);
+  const built = spec.reduced ?? degradeVariants(spec.full, placesContent(spec.channel));
   reducedCache.set(name, built);
   return built;
 }

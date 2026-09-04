@@ -48,6 +48,9 @@ export interface LessonResult {
 
   /** Se congela el HECHO (terminó rápido), no el importe: el bono se deriva de la economía vigente. */
   readonly paceBonusEarned: boolean;
+
+  /** Suma de pesos psicométricos de los primeros intentos. Denominador de la precisión, congelado. */
+  readonly weightTotal: number;
 }
 
 export interface GradeLessonOptions {
@@ -115,5 +118,6 @@ export function gradeLesson(attempts: readonly Attempt[], opts: GradeLessonOptio
     perfect,
     xpUnitsMilli,
     paceBonusEarned: paceBonus > 0,
+    weightTotal,
   };
 }

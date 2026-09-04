@@ -16,7 +16,7 @@ import { MotionConfig, useReducedMotion } from 'motion/react';
 import type { Transition, Variants } from 'motion/react';
 import { CATALOG, CHANNEL_ACTIVE_WHEN_REDUCED, REDUCED_FADE, resolveVariant, spring } from './motion';
 import type { MotionChannel, SpringName, VariantName } from './motion';
-import { setReducedMotion } from './fx';
+import { refreshReducedMotion } from './fx';
 import { audioBus } from '@/lib/audio/synth';
 
 interface MotionState {
@@ -32,7 +32,9 @@ export function MotionRoot({ children }: { readonly children: React.ReactNode })
   const value = useMemo<MotionState>(() => ({ reduced }), [reduced]);
 
   useEffect(() => {
-    setReducedMotion(reduced);
+    // Ya no se EMPUJA el valor —`fx` lo resuelve solo—, solo se invalida su lectura cacheada cuando el
+    // medio cambia en caliente. Empujarlo desde aquí llegaba tarde: los efectos de los hijos corren antes.
+    refreshReducedMotion();
   }, [reduced]);
 
   useEffect(() => {

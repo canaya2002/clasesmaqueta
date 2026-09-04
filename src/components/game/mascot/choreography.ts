@@ -89,7 +89,10 @@ export const CHOREO: Readonly<Record<MascotState, StateChoreography>> = {
       snout: { rotate: 9, scaleX: 1.06 },
       armRight: { rotate: -18, y: -10 },
       brows: { y: -3, rotate: -6 },
-      pupils: { x: 3.5, y: -2.5 },
+      // Dentro del disco de PUPIL_MAX_UNITS: (3.5, -2.5) mide 4.30 y se salía. El seguimiento del
+      // puntero suma sobre esta pose, así que una pose ya fuera del disco saca la mirada de la cara en
+      // cuanto el ratón se mueve. Misma dirección, magnitud 4.16.
+      pupils: { x: 3.4, y: -2.4 },
       tail: { rotate: -8 },
     }),
     mouth: 'flat',
@@ -150,6 +153,104 @@ export const CHOREO: Readonly<Record<MascotState, StateChoreography>> = {
       eyes: { scaleY: 0.45 },
       head: { rotate: 5 },
       scarf: { rotate: 8, y: 4 },
+    }),
+    mouth: 'open',
+    ambient: false,
+  },
+
+  /**
+   * Aplauso corto para cerrar una lección. Es DELIBERADAMENTE menor que `celebrate`.
+   *
+   * Si terminar una lección usara la animación grande, subir de nivel dejaría de sentirse como algo: la
+   * escala de recompensa se aplana desde arriba. Aquí los brazos se juntan al centro en vez de abrirse, no
+   * hay salto, y el cuerpo apenas se estira.
+   */
+  cheer: {
+    layers: pose({
+      body: { y: -4, scaleY: 1.01 },
+      shadow: { scaleX: 0.95, opacity: 0.78 },
+      armLeft: { rotate: 34, x: 6 },
+      armRight: { rotate: -34, x: -6 },
+      earLeft: { rotate: -10 },
+      earRight: { rotate: 12 },
+      tail: { rotate: 14 },
+      head: { rotate: 2, y: -2 },
+      eyes: { scaleY: 0.6 },
+    }),
+    mouth: 'smile',
+    ambient: false,
+  },
+
+  /**
+   * Dormido: el alumno lleva días sin entrar.
+   *
+   * Existe para no usar `idle` ahí. `idle` sonríe y respira: dice "todo bien" justo cuando la racha se
+   * está muriendo, que es el momento en que el producto tiene que decir lo contrario. Los ojos cerrados
+   * son `scaleY` casi cero —no una capa distinta—, y la cola cae con el cuerpo hundido.
+   *
+   * `ambient: true` porque respirar dormido es lo único que lo separa de una mascota apagada.
+   */
+  sleep: {
+    layers: pose({
+      body: { y: 4, scaleY: 0.96, scaleX: 1.03 },
+      shadow: { scaleX: 1.06, opacity: 0.9 },
+      head: { rotate: 12, x: 4, y: 6 },
+      earLeft: { rotate: -30 },
+      earRight: { rotate: -26 },
+      eyes: { scaleY: 0.06 },
+      brows: { y: 3, rotate: 4 },
+      tail: { rotate: -34, scaleY: 0.86 },
+      armLeft: { rotate: -8 },
+      armRight: { rotate: 8 },
+      snout: { rotate: 4 },
+    }),
+    mouth: 'flat',
+    ambient: true,
+  },
+
+  /**
+   * Ánimo tras un tropiezo. La distinción con `wrong` es de PRODUCTO, no de estilo.
+   *
+   * `wrong` es la reacción al fallo —dura 400 ms y se va—; `encourage` es lo que se queda en pantalla
+   * mientras el alumno lee la explicación. Una mascota que sostiene la cara de decepción durante quince
+   * segundos de lectura convierte el error en castigo. Aquí las orejas vuelven a subir, un brazo se
+   * levanta hacia el alumno y la cabeza se inclina hacia él.
+   */
+  encourage: {
+    layers: pose({
+      head: { rotate: 8, x: 3 },
+      earLeft: { rotate: -6 },
+      earRight: { rotate: 14 },
+      armRight: { rotate: -46, y: -8, x: -2 },
+      armLeft: { rotate: 6 },
+      tail: { rotate: 10 },
+      brows: { y: -2, rotate: -3 },
+      body: { y: -2 },
+      scarf: { rotate: 4, y: 2 },
+    }),
+    mouth: 'smile',
+    ambient: false,
+  },
+
+  /**
+   * Sorpresa: apareció algo que el alumno no esperaba —un cofre, una insignia—.
+   *
+   * Es el estado PUENTE de las cinemáticas: se monta antes del takeover para que la recompensa no salga
+   * de la nada. Sin él, `idle` salta a `celebrate` y la mascota parece teletransportarse.
+   */
+  surprise: {
+    layers: pose({
+      body: { y: -6, scaleY: 1.05, scaleX: 0.96 },
+      shadow: { scaleX: 0.88, opacity: 0.66 },
+      head: { y: -3, scaleX: 1.02 },
+      earLeft: { rotate: -34 },
+      earRight: { rotate: 34 },
+      eyes: { scaleY: 1.3, scaleX: 1.12 },
+      brows: { y: -5 },
+      snout: { scaleY: 1.08 },
+      armLeft: { rotate: -26, x: 3 },
+      armRight: { rotate: 26, x: -3 },
+      tail: { rotate: 30, scaleY: 1.06 },
     }),
     mouth: 'open',
     ambient: false,

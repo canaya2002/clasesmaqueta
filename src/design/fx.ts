@@ -11,15 +11,39 @@
 import { audioBus } from '@/lib/audio/synth';
 import { COMBO_BLAZE_AT, COMBO_CEILING, COMBO_SCALE, type SfxId } from './sound';
 
-let reduced = false;
+/**
+ * La preferencia de movimiento se resuelve AQUÍ y de forma perezosa, no se recibe empujada.
+ *
+ * Antes la empujaba `<MotionRoot>` con un `useEffect`, y ese es el orden equivocado: React ejecuta los
+ * efectos de ABAJO ARRIBA dentro de un commit —los hijos primero, el ancestro al final—, así que cualquier
+ * efecto de un hijo que dispare confeti o un destello en el primer commit corre con el valor inicial. El
+ * valor inicial era `false`. Para un usuario fotosensible que abre la app con `prefers-reduced-motion`
+ * activo, eso significa exactamente el destello que la preferencia existe para evitar.
+ *
+ * Ahora se consulta al medio la primera vez que hace falta. `override` sigue existiendo para las pruebas y
+ * para el conmutador del Studio, pero ya no es el camino por defecto.
+ */
+let override: boolean | null = null;
+let cached: boolean | null = null;
 
-/** Lo llama `<MotionRoot>`. Es el único punto del sistema que lee la preferencia del usuario. */
-export function setReducedMotion(value: boolean): void {
-  reduced = value;
+/** Fuerza el valor. Solo para pruebas y para el conmutador manual: la preferencia real no se empuja. */
+export function setReducedMotion(value: boolean | null): void {
+  override = value;
 }
 
 export function isReducedMotion(): boolean {
-  return reduced;
+  if (override !== null) return override;
+  if (cached !== null) return cached;
+  cached =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return cached;
+}
+
+/** Invalida la lectura cacheada. La llama `MotionRoot` cuando el medio cambia en caliente. */
+export function refreshReducedMotion(): void {
+  cached = null;
 }
 
 export interface Origin {
@@ -35,7 +59,7 @@ export interface Origin {
  * usar canvas-confetti para todo porque es una línea.
  */
 export async function confetti(origin: Origin, wave: 1 | 2 = 1): Promise<void> {
-  if (reduced) return;
+  if (isReducedMotion()) return;
   // El contexto 2D puede no existir: modos de privacidad que bloquean canvas, aceleracion desactivada,
   // entornos sin canvas. `canvas-confetti` no lo comprueba y estalla en su primer frame, DESPUES de que la
   // pantalla de recompensa ya se pinto — una excepcion sin capturar en la mejor pantalla de la demo.
@@ -63,7 +87,7 @@ const BURST_COUNT = 14;
  * El presupuesto es auditable en un PR, que es el punto de que sea un número y no "unas cuantas".
  */
 export function burst(el: Element): void {
-  if (reduced) return;
+  if (isReducedMotion()) return;
   const host = document.createElement('div');
   host.setAttribute('data-fx', 'burst');
   host.style.cssText =
@@ -93,8 +117,9 @@ export function burst(el: Element): void {
 
 /** Shake imperativo. Con movimiento reducido se convierte en un destello de borde, no en un fade. */
 export function shake(el: HTMLElement): void {
-  el.setAttribute('data-shake', reduced ? 'flash' : 'x');
-  window.setTimeout(() => el.removeAttribute('data-shake'), reduced ? 240 : 320);
+  const soft = isReducedMotion();
+  el.setAttribute('data-shake', soft ? 'flash' : 'x');
+  window.setTimeout(() => el.removeAttribute('data-shake'), soft ? 240 : 320);
 }
 
 /**
