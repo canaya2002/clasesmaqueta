@@ -155,6 +155,43 @@ export const CATALOG = {
     },
   },
 
+  /* --- ejercicios --- */
+  optionPick: {
+    channel: 'emphasis',
+    full: {
+      rest: { scale: 1 },
+      picked: { scale: [1, 1.03, 1], transition: spring.pop },
+    },
+  },
+  pairSolved: {
+    channel: 'emphasis',
+    full: {
+      rest: { opacity: 1, scale: 1 },
+      solved: { opacity: [1, 0.55, 0.25], scale: 0.96, transition: spring.soft },
+    },
+  },
+  itemGrab: {
+    channel: 'emphasis',
+    full: {
+      rest: { scale: 1, y: 0 },
+      grabbed: { scale: 1.02, y: -2, transition: spring.snap },
+    },
+  },
+  revealIn: {
+    channel: 'entrance',
+    full: {
+      out: { opacity: 0, y: 6 },
+      in: { opacity: 1, y: 0, transition: spring.soft },
+    },
+  },
+  stampIn: {
+    channel: 'emphasis',
+    full: {
+      rest: { opacity: 0, scale: 0.9 },
+      shown: { opacity: 1, scale: 1, transition: spring.pop },
+    },
+  },
+
   /* --- chrome --- */
   routeEnter: {
     channel: 'entrance',

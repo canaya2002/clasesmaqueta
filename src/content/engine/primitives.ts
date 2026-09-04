@@ -24,6 +24,16 @@ import { brand, type Branded } from '@/lib/brand';
  */
 export type Json = null | boolean | number | string | readonly Json[] | { readonly [k: string]: Json };
 
+/**
+ * Guard explícito para estrechar un `Json` a su forma de objeto.
+ *
+ * `Array.isArray` no saca `readonly Json[]` de la unión —TypeScript no estrecha arreglos de solo lectura
+ * por esa vía—, así que `Object.entries` acaba devolviendo `any` y contamina todo lo que toca.
+ */
+export function isJsonObject(value: Json): value is { readonly [k: string]: Json } {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 export const jsonSchema: z.ZodType<Json> = z.lazy(() =>
   z.union([z.null(), z.boolean(), z.number(), z.string(), z.array(jsonSchema), z.record(z.string(), jsonSchema)]),
 );
@@ -64,6 +74,10 @@ export const score01 = z
   .transform((n): Score01 => brand(n));
 
 export function score(value: number): Score01 {
+  // `NaN` NO se recorta: `NaN < 0` y `NaN > 1` son ambas falsas, así que un `0/0` en cualquier fórmula de
+  // calificación parcial se colaba entero hasta la analítica y hasta el reporte del alumno. La guarda va
+  // primero, y en el escalón más bajo posible.
+  if (!Number.isFinite(value)) return brand(0);
   const clamped = value < 0 ? 0 : value > 1 ? 1 : value;
   return brand(clamped);
 }

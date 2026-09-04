@@ -94,8 +94,15 @@ export interface DynamicMeta<K extends DynamicType> {
    * puede generar respuestas realistas.
    */
   readonly solution: (data: DataOf<K>) => AnswerOf<K>;
-  /** El estado inicial de la respuesta. El shell lo necesita para saber si habilitar Comprobar. */
+  /** El estado inicial de la respuesta. */
   readonly emptyAnswer: (data: DataOf<K>) => AnswerOf<K>;
+  /**
+   * ¿Hay respuesta armable?
+   *
+   * Vive en el META y no en la UI a propósito: el shell dibuja el botón Comprobar —que es el elemento más
+   * pesado de la pantalla de lección— y tiene que decidir si va habilitado sin cargar el chunk del player.
+   */
+  readonly canSubmit: (data: DataOf<K>, draft: AnswerOf<K>) => boolean;
 
   /**
    * El SIGNIFICADO, no la forma.
@@ -136,6 +143,7 @@ export interface BoundStep {
   readonly grade: (answer: Json) => Result<GradeResult<Json>, Issues<LocalIssue>>;
   readonly solution: () => Json;
   readonly emptyAnswer: () => Json;
+  readonly canSubmit: (draft: Json) => boolean;
   readonly searchText: () => readonly ContentText[];
   readonly describe: () => ContentText;
   readonly refs: () => readonly string[];
@@ -175,6 +183,16 @@ export interface ErasedDynamic {
  */
 export interface ErasedDynamicOf<K extends DynamicType> extends ErasedDynamic {
   readonly type: K;
+  /**
+   * El meta TIPADO, accesible solo desde código que ya conoce K.
+   *
+   * Existe para que `ui.tsx` no vuelva a declarar `dataSchema`, `answerSchema` ni `emptyAnswer`. Con dos
+   * declaraciones de la misma forma, el día que el meta cambie el schema la UI seguirá parseando y editando
+   * la forma vieja: el envoltorio parsea bien, el Player edita una cosa y `grade()` recibe otra. No hay
+   * ninguna comprobación que lo detecte — dos Zod distintos compilan felices — y el síntoma es "todas las
+   * respuestas salen mal", que se diagnostica tardísimo.
+   */
+  readonly spec: DynamicMeta<K>;
 }
 
 function issuesFromZod(error: z.ZodError): Issues<LocalIssue> {
@@ -194,6 +212,7 @@ function issuesFromZod(error: z.ZodError): Issues<LocalIssue> {
  */
 export function defineDynamic<K extends DynamicType>(meta: DynamicMeta<K>): ErasedDynamicOf<K> {
   return {
+    spec: meta,
     type: meta.type,
     label: meta.label,
     version: meta.version,
@@ -224,6 +243,10 @@ export function defineDynamic<K extends DynamicType>(meta: DynamicMeta<K>): Eras
 
         solution: () => meta.solution(data),
         emptyAnswer: () => meta.emptyAnswer(data),
+        canSubmit: (draft: Json) => {
+          const parsed = meta.answerSchema.safeParse(draft);
+          return parsed.success && meta.canSubmit(data, parsed.data);
+        },
         searchText: () => meta.searchText(data),
         describe: () => meta.describe(data),
         refs: () => meta.refs(data),

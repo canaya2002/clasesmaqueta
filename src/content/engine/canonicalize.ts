@@ -9,7 +9,7 @@
  */
 
 import { hash64 } from '@/lib/rng';
-import type { Json } from './primitives';
+import { isJsonObject, type Json } from './primitives';
 
 /**
  * Campos que NO entran en la identidad de un curso.
@@ -33,14 +33,6 @@ export const VOLATILE_FIELDS: ReadonlySet<string> = new Set([
  * Conservar `null` no es un detalle: en este motor `null` es un valor persistido legítimo (`hint: null`
  * significa "el autor decidió que no hay pista"), así que tratarlo como ausencia cambiaría el contenido.
  */
-/**
- * `Array.isArray` no estrecha un `readonly Json[]` fuera de la unión, así que `Object.entries` acaba
- * devolviendo `any` y contamina todo lo que toca. El guard explícito es lo que conserva el tipo.
- */
-function isJsonObject(value: Json): value is { readonly [k: string]: Json } {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
 export function canonicalize(value: Json): Json {
   if (value === null || typeof value !== 'object') return value;
   if (!isJsonObject(value)) return value.map((v) => canonicalize(v));

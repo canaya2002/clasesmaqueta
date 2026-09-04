@@ -152,6 +152,7 @@ export const multipleChoice = defineDynamic<'multiple-choice'>({
   grade,
   solution: (data): MultipleChoiceAnswer => ({ optionId: data.correctOptionId }),
   emptyAnswer: (): MultipleChoiceAnswer => ({ optionId: null }),
+  canSubmit: (_data, draft): boolean => draft.optionId !== null,
   validate,
 
   searchText: (data): readonly ContentText[] => [data.prompt, ...data.options.map((o) => o.text)],

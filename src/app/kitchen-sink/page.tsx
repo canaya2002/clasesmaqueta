@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Button3D } from '@/components/ui/Button3D';
+import { StepHost } from '@/components/game/StepHost';
+import '@/content/dynamics/index';
+import { listDynamics } from '@/content/engine/registry';
 import { Mascot } from '@/components/game/mascot/Mascot';
 import { MascotSolid } from '@/components/game/mascot/MascotSolid';
 import type { MascotState } from '@/components/game/mascot/types';
@@ -185,6 +188,34 @@ export default function KitchenSink(): React.ReactElement {
           <Button3D size="sm" variant="success" onClick={() => audioBus.setMuted(false)}>
             activar
           </Button3D>
+        </div>
+      </Section>
+
+      <Section
+        title={`Las ${String(listDynamics().length)} dinámicas · jugables de verdad`}
+        hint="Cada una se carga en su propio chunk. Todas se resuelven con teclado: 1–9 elige, Enter comprueba, y en ordenar la lista es un listbox con aria-activedescendant, no una pila de botones. El motor no sabe cuál es cuál: monta la superficie erasada del registro."
+      >
+        <div style={{ display: 'grid', gap: 28 }}>
+          {listDynamics().map((dyn) => {
+            const type = dyn.type;
+            return (
+              <div
+                key={type}
+                style={{
+                  padding: 18,
+                  borderRadius: 'var(--r-lg)',
+                  border: '2px solid var(--border-default)',
+                  background: 'var(--bg-paper)',
+                  boxShadow: '0 4px 0 0 var(--border-default)',
+                }}
+              >
+                <p style={{ margin: '0 0 12px', fontFamily: 'var(--font-display)', color: 'var(--fg-muted)', fontSize: 'var(--t-12)' }}>
+                  {type}
+                </p>
+                <StepHost dynamic={dyn} data={dyn.defaultData} instanceId={`ks:${type}`} />
+              </div>
+            );
+          })}
         </div>
       </Section>
 

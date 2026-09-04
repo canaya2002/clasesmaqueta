@@ -9,7 +9,13 @@
 import type { ErasedDynamicOf } from '../engine/dynamic';
 import { registerDynamic } from '../engine/registry';
 import type { DynamicType } from '../engine/registry.types';
+import { fillBlank } from './fill-blank/meta';
+import { matchPairs } from './match-pairs/meta';
 import { multipleChoice } from './multiple-choice/meta';
+import { multipleSelect } from './multiple-select/meta';
+import { orderSequence } from './order-sequence/meta';
+import { trueFalseSwipe } from './true-false-swipe/meta';
+import { wordBank } from './word-bank/meta';
 
 /**
  * El registro como RECORD MAPEADO EXHAUSTIVO sobre `DynamicType`.
@@ -27,8 +33,14 @@ import { multipleChoice } from './multiple-choice/meta';
  */
 export const DYNAMICS: { readonly [K in DynamicType]: ErasedDynamicOf<K> } = {
   'multiple-choice': multipleChoice,
+  'multiple-select': multipleSelect,
+  'true-false-swipe': trueFalseSwipe,
+  'fill-blank': fillBlank,
+  'word-bank': wordBank,
+  'match-pairs': matchPairs,
+  'order-sequence': orderSequence,
 };
 
 for (const dynamic of Object.values(DYNAMICS)) registerDynamic(dynamic);
 
-export { multipleChoice };
+export { fillBlank, matchPairs, multipleChoice, multipleSelect, orderSequence, trueFalseSwipe, wordBank };

@@ -440,3 +440,97 @@ mundo dos veces y compara los bitsets byte a byte.
 
 **H20 · La retención devuelve `null`, no 0%.** Una cohorte que ingresó hace tres días no tiene retención D7.
 Pintar 0% es un dato falso que en un dashboard nadie cuestiona y que alguien usaría para tomar una decisión.
+
+---
+
+## 8. Hallazgos de la Fase 3 (crítica antes de escribir siete players)
+
+Corrí tres críticos sobre las decisiones más caras de revertir —el puente de UI erasada, la accesibilidad de
+las dinámicas de manipulación y las fórmulas de calificación— con dos dinámicas escritas y cinco por
+escribir. Encontraron **11 P0**. Estos cambiaron el diseño.
+
+**H21 · `score(NaN)` devolvía `NaN`.** Un bug real, no una opinión: `NaN < 0` y `NaN > 1` son ambas falsas,
+así que el valor pasaba entero por el recorte. Cualquier `0/0` en una fórmula de calificación parcial
+—cero opciones correctas, cero parejas, una lista vacía— llegaba intacto al intento persistido, al agregado
+del dashboard y al reporte del alumno. La guarda va primero y en el escalón más bajo posible.
+
+**H22 · La UI declaraba sus propios schemas: dos fuentes de verdad para la misma forma.** El día que
+`fill-blank` cambie `blanks` en su `meta.ts`, la UI seguiría parseando y editando la forma vieja: el
+envoltorio parsea bien, el Player edita una cosa y `grade()` recibe otra. Dos Zod distintos compilan felices
+y el síntoma es "todas las respuestas salen mal". Ahora `defineDynamicUi(dynamic, { Player, Editor })` toma
+el meta TIPADO de la propia dinámica, expuesto como `spec` en `ErasedDynamicOf<K>`.
+
+**H23 · Un `lazy()` creado dentro de un componente cambia el tipo de elemento en cada repintado.** React
+puede descartar la caché de un `useMemo` —lo hace con árboles fuera de pantalla—, y basta un repintado con
+caché fría para que el player se desmonte entero: se pierde el foco del teclado, se pierde el elemento
+tomado y el `Suspense` vuelve a suspender mostrando el esqueleto encima de un ejercicio ya contestado. Es
+intermitente, que es lo peor. Los `lazy()` se crean ahora en TIEMPO DE MÓDULO, en un Record mapeado
+exhaustivo, y el anfitrión solo indexa. Crear el `lazy` en módulo no descarga el chunk: solo renderizarlo
+lo descarga, así que el code-splitting queda intacto.
+
+**H24 · El `answerSchema` describe el ESPACIO DEL BORRADOR, no la respuesta completa.** Si exigiera huecos
+llenos, borrar el hueco 2 de cuatro haría que el draft dejara de parsear, y el envoltorio tendría que
+elegir entre descartar los otros tres huecos ya escritos o desmontar el input que tiene el foco. Las dos
+salidas son pérdida de datos visible. La completitud vive en `canSubmit`, y el envoltorio conserva además
+el último draft válido para que un draft rehidratado de `localStorage` con un esquema anterior no borre
+trabajo.
+
+**H25 · `canSubmit` vive en el META, no en la UI.** El shell dibuja el botón Comprobar —el elemento más
+pesado de la pantalla de lección— y tiene que decidir si va habilitado SIN cargar el chunk del player.
+
+**H26 · Un `<button>` dentro de otro `<button>` es HTML inválido.** El diseño de ordenar-secuencia ponía los
+controles de subir y bajar dentro de cada ficha enfocable. El parser cierra el botón externo y quedan tres
+hermanos. Y hay algo peor detrás: **el patrón "Espacio toma, flechas mueven" no existe para el usuario de
+lector de pantalla**, que es justo el usuario para el que se diseñó — en modo navegación de NVDA o JAWS el
+cursor virtual se come las flechas y el `keydown` nunca llega. Ahora es un `role="listbox"` con
+`aria-activedescendant` (que sí dispara modo foco), las fichas son `role="option"` no enfocables, y los
+controles viven en un `role="toolbar"` FUERA de la lista. Enter y Espacio sí se reenvían al elemento
+enfocado en los tres lectores principales, así que la barra es la ruta garantizada y las flechas son el
+acelerador. De paso, la lista entera es UN tabstop: con cada ficha enfocable harían falta ocho Tab solo
+para cruzar el ejercicio.
+
+**H27 · Los lectores de pantalla no encolan los mensajes polite: los REEMPLAZAN.** Un anuncio de movimiento
+tarda 1.2–1.6 s en locutarse, así que mover una ficha ocho posiciones genera ocho mensajes de los que solo
+importa el último. `LiveAnnouncer` acumula con un borde de salida de 400 ms y alterna DOS nodos, porque un
+texto idéntico al anterior no se vuelve a anunciar y un contador invisible no sirve: el lector lo lee.
+Y hay dos regiones, montadas VACÍAS desde el primer paint —una región que aparece junto con su primer
+mensaje no anuncia ese mensaje—: `role="status"` para movimiento y `role="alert"` para el veredicto, que
+además tira la cola de movimiento antes de escribir.
+
+**H28 · `layoutId` es global dentro del grupo raíz.** Con dos pasos montados a la vez durante una transición
+de ruta, dos fichas con el mismo id se tratan como el MISMO elemento compartido y Framer anima un vuelo de
+la ficha del paso viejo hacia la del nuevo, cruzando la pantalla. Cada paso se envuelve en un
+`<LayoutGroup id={instanceId}>` y el id se compone del id de ficha —nunca del texto, que se repite.
+
+**H29 · La métrica LIS no tiene granularidad y regala medio punto al azar.** Con n=3 solo puede valer 0, 0.5
+o 1, y un barajado aleatorio saca 0.5 de media. En un curso de cumplimiento, regalar medio punto al azar
+puro no es un detalle. Se sustituyó por **distancia de Kendall recentrada**, cuyo valor esperado es 0 para
+una permutación aleatoria sea cual sea n, y por debajo de cinco elementos la calificación es binaria y se
+declara como aviso en el validador. (El `lis()` sigue existiendo: lo usa el DIFF de versiones, donde la
+pregunta es "qué se movió" y no "cuánto desorden hay".)
+
+**H30 · La tolerancia de un typo aceptaba respuestas equivocadas del dominio.** "I-130" e "I-131" están a
+una edición de distancia y son trámites distintos; "15 días" y "45 días" también. La tolerancia se desactiva
+cuando hay dígitos de por medio. Y las diferencias que involucran la ñ nunca se perdonan: la normalización
+la conserva a propósito, así que perdonarla por distancia de edición desharía esa decisión por la puerta de
+atrás.
+
+**H31 · Armar la frase comparaba la permutación de ids, no la cadena resultante.** Con fichas repetidas
+—"de", "la" aparecen dos veces en cualquier frase larga— una respuesta que se lee EXACTAMENTE igual que la
+solución salía incorrecta. El alumno ve su frase idéntica a la correcta y el sistema le dice que está mal:
+es la forma más rápida de perder la confianza en la calificación.
+
+**H32 · Un emparejar de seis parejas se resuelve por descarte en las dos últimas.** El alumno acierta sin
+saber. `extraRights` añade opciones a la derecha que no emparejan con nada, y el validador avisa cuando
+faltan.
+
+**Y el arnés de conformidad cazó uno solo:** `fill-blank` indexaba la plantilla CRUDA, con las marcas
+`{{bnk_a1}}` dentro. Buscar "acuse" en el ⌘K no habría encontrado el ejercicio que pregunta justamente por
+el acuse, porque la palabra solo vive en la lista de respuestas aceptadas. Ahora se indexa el texto
+resuelto más los sinónimos.
+
+**Lo que queda declarado como pendiente:** el arrastre con puntero de `order-sequence` con `dnd-kit`. El
+ejercicio ya es 100% resoluble con teclado y con ratón —tocar toma, la barra mueve—, que es lo que pide el
+criterio de aceptación, y el arrastre es una afordancia encima. Se implementa en la Fase 7 junto con
+`sort-buckets`, que comparte la misma maquinaria, y con la neutralización de la región `aria-live`
+`assertive` que `<DndContext>` monta por su cuenta y que competiría con las dos del anfitrión.
