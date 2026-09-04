@@ -4,6 +4,7 @@ import { DEFAULT_ECONOMY } from '@/content/engine/economy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { BADGES, isUnlocked, type BadgeContext } from '@/game/badges';
 import { epochDayOf } from '@/game/day';
+import { BadgeIcon, LockedIcon } from '@/components/ui/icons';
 
 /**
  * Las 32 insignias. Las bloqueadas se ENSEÑAN, con su pista.
@@ -46,7 +47,7 @@ export function BadgeGrid() {
             <li key={b.id}>
               <div className="badge" data-tier={b.tier} data-locked={has ? undefined : 'true'}>
                 <span aria-hidden="true" className="badge__glyph">
-                  {has ? b.glyph : '·'}
+                  {has ? <BadgeIcon size={22} strokeWidth={2.4} /> : <LockedIcon size={18} strokeWidth={2.4} />}
                 </span>
                 <strong className="badge__name">{b.name}</strong>
                 <span className="badge__hint">{b.hint}</span>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from '@/design/m';
 import { useVariant } from '@/design/MotionRoot';
+import { LeagueIcon, PathIcon, PracticeIcon, QuestIcon, ShopIcon } from './icons';
 
 /**
  * La navegación de la App: barra inferior en móvil, riel lateral desde 900 px.
@@ -16,11 +17,11 @@ import { useVariant } from '@/design/MotionRoot';
  * escribirlo en el texto, y el estilo cuelga del atributo, así que no pueden desincronizarse.
  */
 export const DESTINATIONS = [
-  { href: '/aprende', label: 'Aprender', glyph: '◆' },
-  { href: '/practica', label: 'Practicar', glyph: '⟳' },
-  { href: '/ligas', label: 'Ligas', glyph: '⬢' },
-  { href: '/misiones', label: 'Misiones', glyph: '✦' },
-  { href: '/tienda', label: 'Tienda', glyph: '◈' },
+  { href: '/aprende', label: 'Aprender', Icon: PathIcon },
+  { href: '/practica', label: 'Practicar', Icon: PracticeIcon },
+  { href: '/ligas', label: 'Ligas', Icon: LeagueIcon },
+  { href: '/misiones', label: 'Misiones', Icon: QuestIcon },
+  { href: '/tienda', label: 'Tienda', Icon: ShopIcon },
 ] as const;
 
 export function AppNav() {
@@ -47,7 +48,9 @@ export function AppNav() {
                   initial={false}
                   animate={current ? 'on' : 'off'}
                 >
-                  {d.glyph}
+                  {/* `strokeWidth` sube en el activo: el peso del trazo distingue sin depender del color,
+                      que es el requisito de no señalar NUNCA solo con matiz. */}
+                  <d.Icon size={22} strokeWidth={current ? 2.6 : 2} aria-hidden="true" />
                 </motion.span>
                 <span className="app-nav__label">{d.label}</span>
               </Link>

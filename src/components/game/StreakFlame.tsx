@@ -3,6 +3,7 @@
 import { memo, useEffect } from 'react';
 import { DEFAULT_ECONOMY } from '@/content/engine/economy';
 import { useBasis } from '@/lib/hooks/useGameState';
+import { StreakIcon } from '@/components/ui/icons';
 
 export type StreakTemp = 'cold' | 'warm' | 'hot' | 'blaze';
 
@@ -32,13 +33,18 @@ export const StreakFlame = memo(function StreakFlame() {
   }, [temp]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-      <span aria-hidden="true" style={{ fontSize: 17, lineHeight: 1, color: 'var(--streak-ink)' }}>
-        ▲
-      </span>
-      <span className="u-counter" style={{ fontWeight: 800, fontSize: 'var(--t-16)' }}>
-        {basis === null ? '—' : String(days)}
-      </span>
+    <div className="hud-chip" data-streak-chip={temp}>
+      {/* La llama se RELLENA cuando la racha está viva: contorno hueco a cero días, sólida a partir de
+          tres. El relleno es la señal que sobrevive a la ceguera al color; el matiz solo la acompaña. */}
+      <StreakIcon
+        size={19}
+        strokeWidth={2.4}
+        className="hud-chip__icon"
+        fill={days >= 3 ? 'var(--streak-ink)' : 'none'}
+        color="var(--streak-ink)"
+        aria-hidden="true"
+      />
+      <span className="u-counter hud-chip__value">{basis === null ? '—' : String(days)}</span>
       <span className="sr-only">
         {days === 0
           ? 'Sin racha. Termina una lección hoy para empezar una.'

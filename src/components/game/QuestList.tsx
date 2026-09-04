@@ -6,6 +6,16 @@ import { DEFAULT_ECONOMY } from '@/content/engine/economy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { questProgress, questsFor, isQuestComplete } from '@/game/quests';
 import { claimQuest } from '@/mock/actions';
+import { AccuracyIcon, ComboIcon, DoneIcon, GemIcon, LessonIcon, PerfectIcon, QuestIcon } from '@/components/ui/icons';
+
+/** Un icono por TIPO de misión: el alumno reconoce de qué va antes de leer la frase. */
+const QUEST_ICON = {
+  xp: QuestIcon,
+  lessons: LessonIcon,
+  perfect: PerfectIcon,
+  combo: ComboIcon,
+  accuracy: AccuracyIcon,
+} as const;
 import { DEMO_USER_ORDINAL } from '@/mock/boot-client';
 
 export function QuestList() {
@@ -25,7 +35,14 @@ export function QuestList() {
         const pct = Math.round((at / q.target) * 100);
 
         return (
-          <div key={q.id} className="card" style={{ display: 'grid', gap: 8 }}>
+          <div key={q.id} className="card quest" data-done={done ? 'true' : undefined}>
+            <span className="quest__icon" aria-hidden="true">
+              {(() => {
+                const Icon = QUEST_ICON[q.kind];
+                return <Icon size={22} strokeWidth={2.4} />;
+              })()}
+            </span>
+            <div style={{ display: 'grid', gap: 8, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
               <strong style={{ flex: 1, fontSize: 'var(--t-16)' }}>{q.label}</strong>
               <span className="u-counter" style={{ color: 'var(--fg-muted)', fontSize: 'var(--t-14)' }}>
@@ -46,12 +63,12 @@ export function QuestList() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ flex: 1, color: 'var(--fg-muted)', fontSize: 'var(--t-14)' }}>
-                <span aria-hidden="true">◆</span> {String(q.gems)} gemas
+              <span className="quest__reward">
+                <GemIcon size={15} strokeWidth={2.4} aria-hidden="true" /> {String(q.gems)} gemas
               </span>
               {claimed ? (
-                <span style={{ color: 'var(--fg-success)', fontWeight: 700, fontSize: 'var(--t-14)' }}>
-                  Cobrada
+                <span className="quest__claimed">
+                  <DoneIcon size={16} strokeWidth={3} aria-hidden="true" /> Cobrada
                 </span>
               ) : (
                 <Button3D
@@ -65,6 +82,7 @@ export function QuestList() {
                   Cobrar
                 </Button3D>
               )}
+            </div>
             </div>
           </div>
         );

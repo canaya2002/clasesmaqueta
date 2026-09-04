@@ -5,6 +5,7 @@ import { useFold } from '@/lib/hooks/useGameState';
 import { divisionName, roomFor, settleWeek } from '@/game/leagues';
 import { DEMO_USER_ORDINAL } from '@/mock/boot-client';
 import { userAt } from '@/mock/seed';
+import { DemoteIcon, LeagueIcon, PromoteIcon } from '@/components/ui/icons';
 
 /** El XP de los últimos siete días es lo que compite, no el total acumulado. */
 function weeklyXp(xpByDay: ReadonlyMap<string, number>, todayEpochDay: number, keys: readonly string[]): number {
@@ -26,7 +27,8 @@ export function LeagueTable() {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <div className="card" style={{ textAlign: 'center' }}>
+      <div className="card league-head">
+        <LeagueIcon size={38} strokeWidth={2} aria-hidden="true" className="league-head__icon" />
         <p style={{ margin: 0, color: 'var(--fg-muted)', fontSize: 'var(--t-12)', fontWeight: 800, textTransform: 'uppercase' }}>
           División
         </p>
@@ -50,8 +52,13 @@ export function LeagueTable() {
                 : 'flat';
           return (
             <li key={m.ordinal} className="league-row" data-zone={zone} data-me={m.isMe ? 'true' : undefined}>
-              <span className="u-counter" style={{ width: 28, textAlign: 'right', color: 'var(--fg-muted)' }}>
+              <span className="u-counter" style={{ width: 26, textAlign: 'right', color: 'var(--fg-muted)' }}>
                 {String(rank)}
+              </span>
+              {/* La zona lleva ICONO además del borde de color: el borde solo no sobrevive a una captura
+                  en blanco y negro ni a la ceguera al color rojo-verde. */}
+              <span className="league-row__zone" aria-hidden="true">
+                {zone === 'up' ? <PromoteIcon size={15} strokeWidth={2.8} /> : zone === 'down' ? <DemoteIcon size={15} strokeWidth={2.8} /> : null}
               </span>
               <span style={{ flex: 1, fontWeight: m.isMe ? 800 : 500 }}>
                 {m.isMe ? `${userAt(DEMO_USER_ORDINAL).givenName} (tú)` : `Compañero ${String(-m.ordinal)}`}

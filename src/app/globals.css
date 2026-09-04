@@ -413,8 +413,44 @@ dialog::backdrop {
 }
 
 /* ------------------------------------------------------------------------ el camino */
-.path-node { display: flex; justify-content: center; }
+.path-node { position: relative; display: flex; justify-content: center; }
+
+/* El SENDERO: una línea punteada que baja detrás de los discos y los convierte en un camino en vez de una
+   columna de botones. Va en un pseudo-elemento para no añadir un nodo por lección — son 190. */
+.path-node::before {
+  content: '';
+  position: absolute;
+  top: -18px;
+  bottom: 50%;
+  width: 4px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--border-default) 0 7px,
+    transparent 7px 14px
+  );
+  z-index: 0;
+}
+.path-node:first-of-type::before { display: none; }
+
+.path-node__bubble {
+  position: absolute;
+  top: -26px;
+  z-index: 2;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  background: var(--bg-paper);
+  box-shadow: 0 3px 0 0 var(--border-strong);
+  color: var(--fg-primary);
+  font-family: var(--font-display);
+  font-size: var(--t-12);
+  font-weight: 800;
+  letter-spacing: var(--tr-12);
+  white-space: nowrap;
+}
 .path-node__hit {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   min-width: var(--tap-min);
@@ -429,13 +465,25 @@ dialog::backdrop {
 .path-node__disc {
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 60px;
+  width: 66px;
+  height: 66px;
   border-radius: var(--r-full);
-  font-size: 24px;
-  /* La sombra sólida del sistema: el disco es un botón 3D, no un círculo plano. */
-  box-shadow: 0 5px 0 0 var(--disc-shadow, var(--border-strong));
+  /* La sombra sólida del sistema: el disco es un botón 3D, no un círculo plano. El anillo interior le da
+     el borde de moneda que separa el disco del fondo sin añadir un elemento. */
+  box-shadow:
+    inset 0 0 0 4px rgb(255 255 255 / 0.22),
+    0 6px 0 0 var(--disc-shadow, var(--border-strong));
   transition: none;
+}
+/* El nodo actual respira: es el único con movimiento ambiente en toda la pantalla, y por eso funciona
+   como señal. Veinte nodos respirando serían ruido. */
+.path-node__disc[data-state='current'] { animation: path-breathe 2.6s ease-in-out infinite; }
+@keyframes path-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .path-node__disc[data-state='current'] { animation: none; }
 }
 .path-node__disc[data-state='done']      { background: var(--bg-success-solid); color: var(--fg-on-success); --disc-shadow: var(--mint-shadow); }
 .path-node__disc[data-state='current']   { background: var(--bg-primary); color: var(--fg-on-primary); --disc-shadow: var(--brand-shadow); }
@@ -719,3 +767,118 @@ dialog::backdrop {
 .landing__door span { color: var(--fg-muted); font-size: var(--t-14); line-height: var(--lh-14); }
 .landing__door em { margin-top: auto; color: var(--fg-primary); font-style: normal; font-weight: 800; font-size: var(--t-14); }
 .landing__mascot { width: 132px; height: auto; }
+
+/* ------------------------------------------------------------------------ HUD */
+.app-hud {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--bg-paper);
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+.hud-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 8px;
+  border-radius: var(--r-full);
+  background: var(--bg-canvas);
+}
+.hud-chip__value { font-weight: 800; font-size: var(--t-16); font-variant-numeric: tabular-nums; }
+.hud-chip__icon[data-tone='gem'] { color: var(--sky-500); }
+.hud-chip[data-streak-chip='blaze'] { background: var(--bg-warning-subtle); }
+
+/* ------------------------------------------------------- banner de sección del camino */
+.path-banner-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: var(--r-lg);
+  background: var(--section-fill);
+  color: var(--section-on-fill);
+  box-shadow: var(--e2);
+}
+.path-banner-section > div { flex: 1; }
+.path-banner-section__eyebrow {
+  margin: 0;
+  font-size: var(--t-12);
+  font-weight: 800;
+  letter-spacing: var(--tr-12);
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+.path-banner-section__title {
+  margin: 2px 0 0;
+  font-family: var(--font-display);
+  font-size: var(--t-22);
+  line-height: var(--lh-22);
+}
+
+/* El título de unidad va entre dos líneas: separa sin gritar y no compite con el banner. */
+.path-unit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--t-12);
+  font-weight: 800;
+  letter-spacing: var(--tr-12);
+  text-transform: uppercase;
+  text-align: center;
+}
+.path-unit__line { flex: 1; height: 2px; background: var(--border-default); border-radius: 1px; }
+
+/* --------------------------------------------------------------- misiones y tienda */
+.quest { display: flex; align-items: flex-start; gap: 12px; }
+.quest__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: var(--r-md);
+  background: var(--bg-primary-subtle);
+  color: var(--fg-primary);
+}
+/* Una misión cumplida se distingue por el BORDE y el fondo, no solo por el botón: el estado tiene que
+   leerse de un vistazo desde arriba de la lista. */
+.quest[data-done='true'] { background: var(--bg-success-subtle); box-shadow: inset 0 0 0 2px var(--border-success); }
+.quest[data-done='true'] .quest__icon { background: var(--bg-success-solid); color: var(--fg-on-success); }
+.quest__reward {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  color: var(--fg-muted);
+  font-size: var(--t-14);
+}
+.quest__claimed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--fg-success);
+  font-weight: 700;
+  font-size: var(--t-14);
+}
+.shop-item__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: var(--r-md);
+  background: var(--bg-primary-subtle);
+  color: var(--fg-primary);
+}
+
+.league-head { display: grid; justify-items: center; gap: 2px; text-align: center; }
+.league-head__icon { color: var(--amber-500); }
+.league-row__zone { display: grid; place-items: center; width: 16px; }
+.league-row[data-zone='up'] .league-row__zone { color: var(--fg-success); }
+.league-row[data-zone='down'] .league-row__zone { color: var(--fg-danger); }

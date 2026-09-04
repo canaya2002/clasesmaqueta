@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from '@/design/m';
 import { useVariant } from '@/design/MotionRoot';
 import type { NodeState } from '@/game/path';
+import { CheckpointIcon, DoneIcon, LockedIcon, StartIcon } from '@/components/ui/icons';
 
 const LABEL: Readonly<Record<NodeState, string>> = {
   done: 'completada',
@@ -44,7 +45,15 @@ export function PathNode({ lessonId, title, state, kind, offset }: PathNodeProps
       data-state={state}
       aria-hidden="true"
     >
-      {state === 'done' ? '✓' : locked ? '🔒' : kind === 'checkpoint' ? '★' : '◆'}
+      {state === 'done' ? (
+        <DoneIcon size={26} strokeWidth={3.2} aria-hidden="true" />
+      ) : locked ? (
+        <LockedIcon size={22} strokeWidth={2.6} aria-hidden="true" />
+      ) : kind === 'checkpoint' ? (
+        <CheckpointIcon size={26} strokeWidth={2.6} fill="currentColor" aria-hidden="true" />
+      ) : (
+        <StartIcon size={24} strokeWidth={3} fill="currentColor" aria-hidden="true" />
+      )}
     </motion.span>
   );
 
@@ -70,6 +79,14 @@ export function PathNode({ lessonId, title, state, kind, offset }: PathNodeProps
 
   return (
     <div className="path-node" style={{ transform: `translateX(${String(offset)}px)` }}>
+      {/* La burbuja marca el ÚNICO nodo actual del catálogo. Sin ella, veinte discos disponibles se ven
+          igual de invitantes y el alumno tiene que decidir por dónde seguir, que es trabajo que el
+          producto debería haberle ahorrado. */}
+      {state === 'current' && (
+        <span className="path-node__bubble" aria-hidden="true">
+          EMPEZAR
+        </span>
+      )}
       <Link href={`/leccion/${lessonId}`} aria-label={label} className="path-node__hit">
         {body}
       </Link>

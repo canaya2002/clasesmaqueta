@@ -14,7 +14,6 @@ export interface ShopItem {
   readonly id: ShopItemId;
   readonly name: string;
   readonly body: string;
-  readonly glyph: string;
   readonly price: number;
   /** Por qué no se puede comprar ahora mismo, o `null` si sí se puede. */
   readonly blocked: string | null;
@@ -29,7 +28,6 @@ export function shopItems(econ: EconomyConfig, basis: Basis, heartsFull: boolean
       id: 'heart-refill',
       name: 'Recargar corazones',
       body: 'Vuelve a llenar la barra ahora mismo, sin esperar.',
-      glyph: '♥',
       price: econ.priceHeartRefill,
       // Un artículo que no hace nada no se ofrece "por si acaso": se dice por qué no sirve ahora.
       blocked: heartsFull ? 'Ya tienes todos los corazones' : afford(econ.priceHeartRefill),
@@ -38,7 +36,6 @@ export function shopItems(econ: EconomyConfig, basis: Basis, heartsFull: boolean
       id: 'streak-freeze',
       name: 'Congelador de racha',
       body: 'Tapa un día sin práctica. Se guarda hasta que haga falta.',
-      glyph: '❄',
       price: econ.priceStreakFreeze,
       blocked:
         basis.freezesOwned >= 2
@@ -49,7 +46,6 @@ export function shopItems(econ: EconomyConfig, basis: Basis, heartsFull: boolean
       id: 'unlimited-hearts',
       name: 'Corazones ilimitados',
       body: 'Sin límite de fallos durante 24 horas.',
-      glyph: '∞',
       price: econ.priceUnlimitedHearts,
       blocked: hasBoost ? 'Ya está activo' : afford(econ.priceUnlimitedHearts),
     },

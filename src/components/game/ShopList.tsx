@@ -6,6 +6,13 @@ import { DEFAULT_ECONOMY } from '@/content/engine/economy';
 import { useFold, useHearts } from '@/lib/hooks/useGameState';
 import { shopItems } from '@/game/shop';
 import { buyItem } from '@/mock/actions';
+import { FreezeIcon, GemIcon, HeartIcon, UnlimitedIcon } from '@/components/ui/icons';
+
+const SHOP_ICON = {
+  'heart-refill': HeartIcon,
+  'streak-freeze': FreezeIcon,
+  'unlimited-hearts': UnlimitedIcon,
+} as const;
 
 export function ShopList() {
   const fold = useFold(DEFAULT_ECONOMY);
@@ -20,8 +27,11 @@ export function ShopList() {
     <div style={{ display: 'grid', gap: 12 }}>
       {items.map((item) => (
         <div key={item.id} className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <span aria-hidden="true" style={{ fontSize: 28, width: 40, textAlign: 'center' }}>
-            {item.glyph}
+          <span className="shop-item__icon" aria-hidden="true">
+            {(() => {
+              const Icon = SHOP_ICON[item.id];
+              return <Icon size={24} strokeWidth={2.4} />;
+            })()}
           </span>
           <div style={{ flex: 1 }}>
             <strong style={{ display: 'block', fontSize: 'var(--t-16)' }}>{item.name}</strong>
@@ -41,7 +51,9 @@ export function ShopList() {
               setMessage(r.ok ? `Listo: ${item.name.toLocaleLowerCase('es-MX')}` : r.reason);
             }}
           >
-            ◆ {String(item.price)}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <GemIcon size={16} strokeWidth={2.6} aria-hidden="true" /> {String(item.price)}
+            </span>
           </Button3D>
         </div>
       ))}

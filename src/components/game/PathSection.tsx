@@ -3,6 +3,10 @@
 import { memo } from 'react';
 import { PathNode } from './PathNode';
 import type { NodeState } from '@/game/path';
+import { LessonIcon } from '@/components/ui/icons';
+
+/** Las seis paletas de sección declaradas en los tokens. El camino las rota para dar ritmo visual. */
+const PALETTES = ['brand', 'mint', 'amber', 'sky', 'coral', 'grape'] as const;
 
 export interface PathLesson {
   readonly id: string;
@@ -35,37 +39,24 @@ export interface PathSectionProps {
 export const PathSection = memo(function PathSection({ title, units, states, index }: PathSectionProps) {
   return (
     <section aria-labelledby={`sec-${String(index)}`} style={{ display: 'grid', gap: 20, paddingBlock: 28 }}>
-      <h2
-        id={`sec-${String(index)}`}
-        data-section={index % 2 === 0 ? 'brand' : 'lime'}
-        style={{
-          justifySelf: 'center',
-          margin: 0,
-          padding: '8px 20px',
-          borderRadius: 'var(--r-full)',
-          background: 'var(--section-fill)',
-          color: 'var(--section-on-fill)',
-          fontFamily: 'var(--font-display)',
-          fontSize: 'var(--t-16)',
-        }}
-      >
-        {title}
-      </h2>
+      {/* El banner de sección: ancho completo, con el color de su paleta. Es lo que rompe el camino en
+          capítulos; una píldora centrada se lee como una etiqueta más y no separa nada. */}
+      <div className="path-banner-section" data-section={PALETTES[index % PALETTES.length]}>
+        <div>
+          <p className="path-banner-section__eyebrow">Sección {String(index + 1)}</p>
+          <h2 id={`sec-${String(index)}`} className="path-banner-section__title">
+            {title}
+          </h2>
+        </div>
+        <LessonIcon size={30} strokeWidth={2.2} aria-hidden="true" style={{ opacity: 0.85 }} />
+      </div>
 
       {units.map((unit) => (
         <div key={unit.id} style={{ display: 'grid', gap: 14 }}>
-          <h3
-            style={{
-              justifySelf: 'center',
-              margin: 0,
-              color: 'var(--fg-muted)',
-              fontSize: 'var(--t-14)',
-              fontWeight: 700,
-              textAlign: 'center',
-              maxWidth: 'var(--measure)',
-            }}
-          >
-            {unit.title}
+          <h3 className="path-unit">
+            <span className="path-unit__line" aria-hidden="true" />
+            <span>{unit.title}</span>
+            <span className="path-unit__line" aria-hidden="true" />
           </h3>
           {unit.lessons.map((lesson, i) => (
             <PathNode
