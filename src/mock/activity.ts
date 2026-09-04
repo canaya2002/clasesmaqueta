@@ -19,7 +19,8 @@
  */
 
 import { mix32, u01 } from '@/lib/rng';
-import { HISTORY_DAYS } from '@/lib/clock';
+import { HISTORY_DAYS, orgEpochDay } from '@/lib/clock';
+import { brand } from '@/lib/brand';
 
 export const USER_COUNT = 1247;
 const WORDS_PER_USER = Math.ceil(HISTORY_DAYS / 32); // 4
@@ -36,10 +37,44 @@ export const NS = {
 } as const;
 
 /**
- * Estacionalidad FIJA. El día 0 de la ventana es un lunes por construcción del ancla.
+ * Estacionalidad por día de la semana REAL, indexada de lunes a domingo.
+ *
+ * Decía "el día 0 de la ventana es un lunes por construcción del ancla" y era falso: el ancla es la
+ * medianoche de HOY, sea martes o sábado. Con `d % 7` el hundimiento de fin de semana caía en dos días
+ * arbitrarios y se movía uno cada noche — una gráfica de DAU cuyo valle no estaba en el fin de semana, en
+ * una demo para un despacho que sabe perfectamente cómo se ve su propia semana.
+ *
  * Fin de semana hundido, viernes flojo: es una plantilla corporativa, no una app de consumo.
  */
 const WEEKDAY_FACTOR: readonly number[] = [1.12, 1.15, 1.1, 1.05, 0.82, 0.34, 0.28];
+
+/**
+ * Día de la semana con el lunes en 0, a partir del ordinal absoluto desde la época Unix.
+ *
+ * El 1 de enero de 1970 fue jueves, así que el desplazamiento es 3. Se calcula con aritmética y no con
+ * `new Date().getDay()` porque `new Date` está prohibido por lint fuera de los archivos dueños del reloj,
+ * y porque un `Date` por usuario y día son 149,640 objetos en el arranque.
+ */
+function weekdayMon0(absDay: number): number {
+  return (((absDay + 3) % 7) + 7) % 7;
+}
+
+/**
+ * El día ABSOLUTO en que un usuario abandona, o `null`.
+ *
+ * Es una función PURA del usuario y del calendario, y esa es la corrección importante. Antes el abandono
+ * era un estado absorbente sorteado DENTRO del recorrido: bastaba con que la ventana empezara un día antes
+ * para que alguien abandonara en otra fecha, y a partir de ahí su historia entera cambiaba. Como el estado
+ * es absorbente, la cadena no lo olvidaba nunca: por eso el 6% de los bits cambiaba cada noche y no
+ * decaía con el tiempo.
+ */
+function churnAbsDay(ordinal: number, hazard: number, fromAbs: number, toAbs: number): number | null {
+  if (hazard <= 0) return null;
+  for (let abs = fromAbs; abs <= toAbs; abs += 1) {
+    if (u01(mix32(NS.churn, ordinal, abs)) < hazard) return abs;
+  }
+  return null;
+}
 
 /** Dos campañas de Recursos Humanos. Fijas: no dependen de cuánta gente haya en el roster. */
 function campaignBoost(day: number): number {
@@ -125,25 +160,34 @@ export function buildActivityIndex(): ActivityIndex {
   const bestStreak = new Uint16Array(USER_COUNT);
   const churnedAt = new Int16Array(USER_COUNT).fill(-1);
 
+  const absToday = orgEpochDay(brand<number, 'DayIndex'>(HISTORY_DAYS - 1));
+  const absFirst = absToday - (HISTORY_DAYS - 1);
+
   for (let u = 0; u < USER_COUNT; u += 1) {
     const p = paramsFor(u);
+    const churnAbs = churnAbsDay(u, p.churnHazard, absFirst + p.joinDay, absToday);
     let active = false;
-    let churned = false;
     let run = 0;
     let best = 0;
 
     for (let d = 0; d < HISTORY_DAYS; d += 1) {
-      if (d < p.joinDay || churned) {
+      const abs = absFirst + d;
+      if (d < p.joinDay || (churnAbs !== null && abs >= churnAbs)) {
         run = 0;
+        if (churnAbs !== null && abs === churnAbs) churnedAt[u] = d;
         continue;
       }
 
-      const seasonal = (WEEKDAY_FACTOR[d % 7] ?? 1) * campaignBoost(d);
+      const seasonal = (WEEKDAY_FACTOR[weekdayMon0(abs)] ?? 1) * campaignBoost(d);
       // La estacionalidad se aplica ENTERA a la resurrección y AMORTIGUADA a la persistencia.
       const pActive: number = active
         ? Math.min(0.995, p.persistence * (1 - (1 - seasonal) * p.weekendSensitivity))
         : Math.min(0.9, p.revival * seasonal);
-      const roll = u01(mix32(NS.daily, u, d));
+      // Sembrado por día ABSOLUTO, no por el índice relativo de la columna. El ancla se desliza una
+      // columna cada medianoche: con `d`, la misma fecha real saca otro número al día siguiente y los 120
+      // días de historia de los 1,247 usuarios se vuelven a tirar enteros. La demo dejaría de ser la misma
+      // demo entre una sesión de la tarde y otra de la mañana siguiente.
+      const roll = u01(mix32(NS.daily, u, abs));
       active = roll < pActive;
 
       if (active) {
@@ -158,10 +202,6 @@ export function buildActivityIndex(): ActivityIndex {
         if (run > best) best = run;
       } else {
         run = 0;
-        if (p.churnHazard > 0 && u01(mix32(NS.churn, u, d)) < p.churnHazard) {
-          churned = true;
-          churnedAt[u] = d;
-        }
       }
     }
 

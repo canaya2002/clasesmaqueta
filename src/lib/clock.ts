@@ -85,7 +85,27 @@ export interface ClockDrift {
 /** Deriva máxima que se desliza. Por encima, se re-ancla: una máquina en 2030 no debe deslizar 4 años. */
 export const MAX_DRIFT_DAYS = 400;
 
+/**
+ * Semilla de época monótona para esta carga de documento.
+ *
+ * `crypto.getRandomValues` y no `Math.random` —prohibido por lint— ni un contador: dos pestañas abiertas a
+ * la vez tienen que verse como épocas DISTINTAS, o el reloj monótono de una se compararía contra el origen
+ * de la otra. Un contador determinista les daría el mismo valor.
+ */
+export function newEpochSeed(): string {
+  const buf = new Uint32Array(2);
+  globalThis.crypto.getRandomValues(buf);
+  return `e${(buf[0] ?? 0).toString(36)}${(buf[1] ?? 0).toString(36)}`;
+}
+
 export function initClock(init: ClockInit): ClockDrift {
+  // Una época vacía es indistinguible de "sin inicializar", y `mock/hearts.ts` usa exactamente la cadena
+  // vacía como centinela de "este registro viene del almacenamiento". Si las dos coinciden, un registro
+  // rehidratado se cree de la MISMA carga de documento y el reloj monótono se compara contra un origen de
+  // otra sesión: los corazones vuelven a ser vulnerables al reloj del sistema, que es justo lo que la
+  // Fase 4 fue a resolver.
+  if (init.epochSeed === '') throw new Error('initClock: `epochSeed` no puede ser la cadena vacía.');
+
   const todayMidnight = midnightOf(wallNow());
   state.monoEpochId = init.epochSeed;
   state.monoOrigin = monotonicNow();
@@ -110,7 +130,11 @@ export function initClock(init: ClockInit): ClockDrift {
     return { anchorMs: todayMidnight, driftDays: rawDrift, wentBackwards: false, reanchored: true };
   }
 
-  state.anchorMs = init.storedAnchorMs + rawDrift * MS_PER_DAY;
+  // Re-normalizar a medianoche LOCAL después de deslizar. Sumar múltiplos exactos de 86.400.000 ms
+  // atraviesa el cambio de horario —el día del cambio dura 23 o 25 horas— y deja el ancla corrida una hora
+  // para siempre. En Houston y Chicago eso basta para que `toDayIndex(hoy)` devuelva 118 en vez de 119 y
+  // el heatmap pierda la columna de hoy. Las tres oficinas cruzan cambio de horario.
+  state.anchorMs = midnightOf(init.storedAnchorMs + rawDrift * MS_PER_DAY);
   return { anchorMs: state.anchorMs, driftDays: rawDrift, wentBackwards: false, reanchored: false };
 }
 
@@ -138,8 +162,15 @@ export function mono(): number {
   return monotonicNow() - state.monoOrigin;
 }
 
-/** Cambia en cada carga de documento: si no coincide con el persistido, hubo recarga. */
+/**
+ * Cambia en cada carga de documento: si no coincide con el persistido, hubo recarga.
+ *
+ * Exige inicialización igual que `now()`. Sin el `assertInit`, olvidar `initClock()` en el arranque no
+ * fallaba: devolvía la cadena vacía en silencio, que es el mismo valor con el que se rehidrata un registro
+ * de corazones. Un centinela que coincide con el valor real es peor que no tener centinela.
+ */
 export function monoEpochId(): string {
+  assertInit();
   return state.monoEpochId;
 }
 
@@ -161,8 +192,49 @@ export function dayIndexToMs(day: DayIndex): number {
   return state.anchorMs - (HISTORY_DAYS - 1 - day) * MS_PER_DAY;
 }
 
+/**
+ * Hoy es SIEMPRE la última columna: el ancla se desliza, la rejilla no.
+ *
+ * Por eso este valor es una constante, y por eso NO se puede congelar en ningún dato persistido. Un evento
+ * que guarde `todayIndex()` guarda 119 hoy y sigue significando "hoy" mañana: una racha comparada así no se
+ * puede romper nunca. Lo que se persiste es tiempo absoluto (`nowReal()`), y el índice se deriva al leer.
+ */
 export function todayIndex(): DayIndex {
   return brand<number, 'DayIndex'>(HISTORY_DAYS - 1);
+}
+
+/**
+ * El ordinal ABSOLUTO de una columna del heatmap, contado desde la época Unix.
+ *
+ * Es lo que hace falta para sembrar contenido determinista por día. Sembrar con el índice RELATIVO —0 a
+ * 119— parece equivalente y no lo es: el ancla se desliza una columna cada medianoche, así que la misma
+ * fecha real pasa de la columna `d` a la `d-1` y saca otro número. La historia entera de los 1,247
+ * usuarios se vuelve a tirar cada noche: la racha de 23 días que se enseñó ayer es otra hoy, y el heatmap
+ * es otro dibujo. Con el ordinal absoluto, la fecha real conserva su sorteo.
+ */
+export function orgEpochDay(day: DayIndex): number {
+  assertInit();
+  return Math.round(dayIndexToMs(day) / MS_PER_DAY);
+}
+
+/** Milisegundos hasta el próximo cruce de día en esa zona. Para re-derivar la racha sin recargar. */
+export function msUntilNextDayStart(ms: number, zone: OfficeZone): number {
+  const key = dayKeyInZone(ms, zone);
+  let probe = ms + 3_600_000;
+  // Como mucho 25 saltos de una hora: un día dura 23, 24 o 25 horas según el cambio de horario.
+  for (let i = 0; i < 26; i += 1) {
+    if (dayKeyInZone(probe, zone) !== key) {
+      // Afinado al minuto dentro de la hora que cruza.
+      let lo = probe - 3_600_000;
+      for (let m = 0; m < 60; m += 1) {
+        if (dayKeyInZone(lo + 60_000, zone) !== key) return Math.max(0, lo + 60_000 - ms);
+        lo += 60_000;
+      }
+      return Math.max(0, probe - ms);
+    }
+    probe += 3_600_000;
+  }
+  return MS_PER_DAY;
 }
 
 const zoneFormatters = new Map<string, Intl.DateTimeFormat>();

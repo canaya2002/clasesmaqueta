@@ -94,7 +94,7 @@ export function HeartBar({
           style={{
             fontSize: 'var(--t-12)',
             padding: '2px 8px',
-            borderRadius: 'var(--r-pill)',
+            borderRadius: 'var(--r-full)',
             background: 'var(--bg-warning-subtle)',
             color: 'var(--ink-fixed)',
           }}

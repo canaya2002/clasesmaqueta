@@ -59,7 +59,7 @@ export function LessonSummary({ result, headingRef, onContinue }: LessonSummaryP
     >
       <Mascot state={result.perfect ? 'celebrate' : 'correct'} size={160} />
 
-      <h1 ref={headingRef} tabIndex={-1} style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--t-32)', margin: 0 }}>
+      <h1 ref={headingRef} tabIndex={-1} style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--t-36)', margin: 0 }}>
         {result.perfect ? '¡Lección perfecta!' : '¡Lección completada!'}
       </h1>
 
@@ -73,10 +73,10 @@ export function LessonSummary({ result, headingRef, onContinue }: LessonSummaryP
           gap: 8,
           padding: '16px 28px',
           borderRadius: 'var(--r-xl)',
-          background: 'var(--bg-brand-subtle)',
-          color: 'var(--fg-brand)',
+          background: 'var(--bg-primary-subtle)',
+          color: 'var(--fg-primary)',
           fontFamily: 'var(--font-display)',
-          fontSize: 'var(--t-32)',
+          fontSize: 'var(--t-36)',
         }}
       >
         <span aria-hidden="true">+</span>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { HISTORY_DAYS } from '@/lib/clock';
+import { HISTORY_DAYS, initClock, orgEpochDay } from '@/lib/clock';
+import { brand } from '@/lib/brand';
 import {
   activeInWindow,
   buildActivityIndex,
@@ -11,6 +12,11 @@ import {
 } from '../activity';
 import { COHORTS, EXPECTED_TOTAL } from '../fixtures/org';
 import { buildSearchIndex, buildUsers, cohortIndexOf, searchUsers, userAt } from '../seed';
+
+// El reloj se inicializa en el ámbito del MÓDULO, no en un `beforeEach`: el índice se construye al
+// importar, y `beforeEach` corre después. Que este archivo fuera el único que lo necesitara es la prueba
+// de que era el único que llegaba a `orgEpochDay` antes de que hubiera reloj.
+initClock({ storedAnchorMs: Date.parse('2026-03-02T00:00:00-06:00'), epochSeed: 'test-world' });
 
 const index = buildActivityIndex();
 const slice = buildUsers();
@@ -103,15 +109,27 @@ describe('la actividad histórica', () => {
     expect(dau).toBeGreaterThan(100);
   });
 
-  it('la estacionalidad de fin de semana es visible en el agregado', () => {
+  it('el valle de actividad cae en el fin de semana REAL', () => {
+    // Esta prueba pasaba con `d % 7 >= 5`, que da el fin de semana solo si la columna 0 es lunes. El ancla
+    // es la medianoche de HOY, así que la columna 0 es lunes uno de cada siete días: la prueba verificaba
+    // que hubiera un valle en dos columnas cualesquiera, no que el valle fuera el fin de semana. Ahora se
+    // pregunta por el día de la semana de verdad, que es lo que el comprador va a mirar en la gráfica.
     let weekday = 0;
+    let weekdayDays = 0;
     let weekend = 0;
+    let weekendDays = 0;
     for (let d = 0; d < HISTORY_DAYS; d += 1) {
-      const dow = d % 7;
-      if (dow >= 5) weekend += index.dau[d] ?? 0;
-      else weekday += index.dau[d] ?? 0;
+      const abs = orgEpochDay(brand<number, 'DayIndex'>(d));
+      const mon0 = (((abs + 3) % 7) + 7) % 7;
+      if (mon0 >= 5) {
+        weekend += index.dau[d] ?? 0;
+        weekendDays += 1;
+      } else {
+        weekday += index.dau[d] ?? 0;
+        weekdayDays += 1;
+      }
     }
-    expect(weekend / 2 / (HISTORY_DAYS / 7)).toBeLessThan(weekday / 5 / (HISTORY_DAYS / 7));
+    expect(weekend / weekendDays).toBeLessThan(weekday / weekdayDays);
   });
 
   it('la retención devuelve null —no 0%— cuando la cohorte aún no cumple k días', () => {

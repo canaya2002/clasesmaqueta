@@ -58,7 +58,6 @@ var raw=localStorage.getItem('senda:v1:boot-digest');
 var b=raw?JSON.parse(raw):null;
 if(b&&b.theme&&b.theme!=='system')d.setAttribute('data-theme',b.theme);
 if(b&&b.streak)d.setAttribute('data-streak',b.streak);else d.setAttribute('data-streak','cold');
-if(b&&typeof b.brandHue==='number')d.style.setProperty('--brand-h',String(b.brandHue));
 if('scrollRestoration' in history)history.scrollRestoration='manual';
 }catch(e){d.setAttribute('data-streak','cold');}})();`;
 

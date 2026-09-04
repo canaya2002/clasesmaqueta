@@ -68,8 +68,14 @@ function load(cfg: HeartsConfig, s: ClockSample): HeartsRecord {
       hearts: Math.min(cfg.maxHearts, Math.max(0, num(record, 'hearts', cfg.maxHearts))),
       lastAccrualRealMs: num(record, 'lastAccrualRealMs', s.realMs),
       lastAccrualMonoMs: num(record, 'lastAccrualMonoMs', s.monoMs),
-      // La época NO se persiste con valor útil: si se rehidratara igual, dos pestañas se creerían la misma
-      // carga de documento y el monótono de una mediría contra el de la otra.
+      // La cadena vacía como centinela de "esto viene del almacenamiento".
+      //
+      // Es sana SOLO porque `initClock` rechaza `epochSeed: ''` y `monoEpochId()` exige inicialización:
+      // entre las dos, una época viva nunca puede ser `''`. Sin esas dos guardas —y durante dos fases no
+      // existieron— el centinela COINCIDÍA con el valor real, un registro rehidratado se creía de la misma
+      // carga de documento, y el reloj monótono se comparaba contra el origen de otra sesión. Los
+      // corazones volvían a ser vulnerables al reloj del sistema. Si alguien relaja aquella validación,
+      // este centinela deja de serlo.
       monoEpochId: '',
       unlimitedUntilRealMs:
         typeof unlimited === 'number' && Number.isFinite(unlimited) ? unlimited : null,
@@ -96,19 +102,56 @@ export function dispatchHearts(econ: EconomyConfig, event: HeartsEvent): HeartsR
   const before = load(cfg, s);
   const after = reduceHearts(before, event, s, cfg);
   cache = after;
-  // Escribir solo cuando algo cambió: un `tick` que no otorga no debe tocar el almacenamiento.
-  if (
+
+  // PERSISTIR y NOTIFICAR son dos preguntas distintas, y unificarlas era un error con dos caras.
+  //
+  // Se persiste cuando cambia cualquier campo, incluido el rebase del sello: si no, el residuo se pierde
+  // en la siguiente recarga. Se NOTIFICA solo cuando cambia algo que un componente pueda pintar. Un rebase
+  // de sello no es observable, y despertaba a todos los suscriptores en cada tick del contador.
+  const changed =
     after.hearts !== before.hearts ||
     after.lastAccrualRealMs !== before.lastAccrualRealMs ||
     after.unlimitedUntilRealMs !== before.unlimitedUntilRealMs ||
-    after.untrustedGranted !== before.untrustedGranted
-  ) {
-    persist(after);
+    after.untrustedGranted !== before.untrustedGranted;
+  if (changed) persist(after);
+
+  const observable =
+    after.hearts !== before.hearts || after.unlimitedUntilRealMs !== before.unlimitedUntilRealMs;
+  if (observable) {
+    view = null;
     for (const fn of listeners) fn();
   }
   return after;
 }
 
+/**
+ * Vista estable para React. NO despacha nada.
+ *
+ * `snapshot()` no sirve como `getSnapshot` de `useSyncExternalStore` por dos razones independientes: hace
+ * efectos —despacha un `tick`, que escribe en almacenamiento y recorre los suscriptores— y devuelve un
+ * objeto literal nuevo en cada llamada, así que `Object.is` siempre falla y React entra en bucle. Esta
+ * lectura devuelve SIEMPRE la misma identidad hasta que un cambio observable la invalida.
+ */
+let view: HeartsSnapshot | null = null;
+
+export function peekHearts(econ: EconomyConfig): HeartsSnapshot {
+  if (view !== null) return view;
+  const cfg = configFrom(econ);
+  const s = sampleNow();
+  const record = load(cfg, s);
+  const unlimited = isUnlimited(record, s);
+  const until = msUntilNextHeart(record, s, cfg);
+  view = {
+    enabled: cfg.maxHearts > 0,
+    current: unlimited ? cfg.maxHearts : record.hearts,
+    max: cfg.maxHearts,
+    nextRefillAtRealMs: until === null ? null : s.realMs + until,
+    unlimited,
+  };
+  return view;
+}
+
+/** La lectura IMPERATIVA: acumula, persiste y devuelve. La usa `createSessionRuntime`, no React. */
 export function snapshot(econ: EconomyConfig): HeartsSnapshot {
   const cfg = configFrom(econ);
   const s = sampleNow();
@@ -146,4 +189,5 @@ export function subscribeHearts(fn: () => void): () => void {
 /** Solo para pruebas: el registro es estado de módulo. */
 export function resetHeartsForTests(record: HeartsRecord | null): void {
   cache = record;
+  view = null;
 }

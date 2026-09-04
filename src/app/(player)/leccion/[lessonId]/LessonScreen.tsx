@@ -69,7 +69,7 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
         <p style={{ color: 'var(--fg-muted)', margin: 0, maxWidth: 'var(--measure)' }}>
           Puede que se haya despublicado desde el Studio. El resto del curso sigue disponible.
         </p>
-        <a href="/" style={{ color: 'var(--fg-brand)', fontWeight: 700 }}>
+        <a href="/" style={{ color: 'var(--fg-primary)', fontWeight: 700 }}>
           Volver al inicio
         </a>
       </main>

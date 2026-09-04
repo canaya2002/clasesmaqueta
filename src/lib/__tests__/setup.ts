@@ -5,8 +5,22 @@
  * `window` y temporizadores, y un árbol que no se desmonta los deja corriendo en el siguiente test — que
  * es exactamente la clase de fallo intermitente que luego se culpa al "orden de los tests".
  */
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { initClock } from '@/lib/clock';
+
+/**
+ * El reloj se inicializa para TODAS las pruebas, con un ancla fija.
+ *
+ * No es comodidad: `initClock` lanza si no se llamó, y durante dos fases nadie lo llamó ni en la app ni en
+ * las pruebas — así que el estado "sin inicializar" era alcanzable y nadie lo notaba. Inicializarlo aquí lo
+ * vuelve inalcanzable por defecto; una prueba que necesite otra ancla sigue pudiendo llamar a `initClock`.
+ */
+const TEST_ANCHOR = Date.parse('2026-03-02T00:00:00-06:00');
+
+beforeEach(() => {
+  initClock({ storedAnchorMs: TEST_ANCHOR, epochSeed: 'test-epoch' });
+});
 
 afterEach(() => {
   cleanup();
