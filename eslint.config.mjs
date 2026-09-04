@@ -157,6 +157,28 @@ export default tseslint.config(
   /* --- dueños declarados de cada invariante ------------------------------------------------------ */
 
   {
+    // El `meta.ts` de una dinámica NO puede importar su UI.
+    //
+    // El barrel importa los 14 meta.ts para registrarlos. Si un meta importa su `./ui` estáticamente, el
+    // grafo mete 14 árboles de player —con audio, arrastre y canvas— en el bundle de /studio/reports, que
+    // no renderiza ni un solo ejercicio. Nada más detecta esa regresión: el build sigue verde y solo crece.
+    files: ['src/content/dynamics/*/meta.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['./ui', './Player', './Editor', './FeedbackDetail'],
+              message:
+                'meta.ts es puro. El Player y el Editor se cargan con next/dynamic desde ui.ts, o el barrel arrastra las 14 UIs a cada chunk.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // El dueño del reloj. Es el único que puede tocar Date y performance.
     files: ['src/lib/clock.ts'],
     rules: {

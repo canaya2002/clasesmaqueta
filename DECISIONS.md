@@ -351,3 +351,92 @@ arregló debilitando la regla: seis desaparecieron con tuplas de claves declarad
 completitud a nivel de tipos, y los dos irreductibles viven en `src/lib/brand.ts`, cuyo propósito entero es
 ser esa excepción. Un tipo marcado no se puede construir sin una afirmación en algún punto; la elección real
 no era "con casts o sin ellos" sino si hay **uno**, declarado y auditable, o veinte repartidos por el árbol.
+
+---
+
+## 7. Hallazgos de la Fase 2 (la crítica adversarial pendiente, ya ejecutada)
+
+`PLAN.md` §0 declaraba una deuda: siete áreas diseñadas sin crítica ni verificación. Antes de escribir el
+motor corrí tres críticos independientes sobre las que esta fase construye —erasure de tipos, máquina de
+sesión y determinismo del mundo—. Encontraron **12 P0**. Estos son los que cambiaron el diseño.
+
+**H8 · La erasure borraba también la clave del tipo, y eso volvía decorativa la prueba de completitud.**
+Si `defineDynamic` devuelve `ErasedDynamic` a secas, su campo `type` se ensancha a `DynamicType` y
+`(typeof DYNAMICS)[number]['type']` es idéntico a `DynamicType` SIEMPRE: la prueba pasa verde para toda
+eternidad, incluido el caso que existía para atrapar. Se corrigió con `ErasedDynamicOf<K>`, y después se
+sustituyó la aserción entera por un **Record mapeado exhaustivo**, que da mejores errores (nombra la clave
+que falta) y además hace imposible un duplicado. Verificado: borrar la entrada produce
+`faltan: "multiple-choice"` en el mensaje.
+
+**H9 · El editor no puede vivir dentro de `bind()`.** Un paso a medio escribir es inválido POR CONSTRUCCIÓN
+bajo las reglas del propio motor: la primera tecla en el enunciado produce `options: []` y
+`correctOptionId: null`, y ninguno de los dos pasa el esquema estricto. `bind` devolvería error en cada
+pulsación y el editor se quedaría sin superficie. El contrato del plugin gana `draftSchema` y
+`validateDraft`: `bind` es la puerta del player, la preview y la calificación; el editor es otra puerta.
+
+**H10 · `err([])` compilaba.** Una lista de problemas vacía pinta "este paso tiene errores" sin ninguno.
+Los errores pasan a ser `Issues<T> = readonly [T, ...T[]]`.
+
+**H11 · La erasure no borraba el `switch`: lo reubicaba.** Para responder "% de pasos de habla omitidos por
+falta de micrófono", la analítica tendría que reimportar el `answerSchema` del plugin — y con eso vuelve el
+acoplamiento y se cae el code-splitting. El `BoundStep` gana `facets(answer)`, que resume la respuesta en
+dimensiones que la analítica agrega sin conocer la dinámica.
+
+**H12 · Deduplicar comandos por un contador rompe StrictMode; hay que partirlos en dos familias.**
+Con `seq` y un ref, React monta → limpia → monta: la limpieza cancela el avance automático de 700 ms y el
+segundo montaje lo descarta por «seq ya visto». La sesión se queda clavada en «correcto» para siempre.
+Ahora hay `OneShot` —deduplicado por una clave estable `${instanceId}:${efecto}`— y actividades
+DECLARATIVAS que viven en el estado (`advanceAtMs`, `focusTarget`, `liveMessage`) y se reconcilian solas en
+el segundo montaje. `announce` deja de ser una llamada imperativa del puerto y pasa a ser estado que un
+`<div aria-live>` renderiza.
+
+**H13 · El rng y el contador tienen que vivir DENTRO del estado.** React invoca el reducer dos veces en
+desarrollo. Con el rng cerrado sobre el puerto, la semilla avanza el doble y la misma semilla deja de
+reproducir la misma sesión entre dev y producción, en silencio. `splitmix32` avanza como VALOR y el reducer
+es puro de verdad: hay una prueba que ejecuta el mismo evento dos veces y compara el resultado completo.
+
+**H14 · `(state, event) => [state, cmds]` no es una firma válida de `useReducer`.** Dejar la cola en un ref
+la pierde en el remontaje o la ejecuta desde un render que React descartó — y entonces se gasta un corazón
+por un intento que nunca ocurrió. Se envuelve en `machineReducer`, con la cola dentro del estado y el
+drenado como un evento más.
+
+**H15 · Usar el peso de ECONOMÍA como peso PSICOMÉTRICO hace que la precisión histórica se mueva sola.**
+Es el hallazgo más caro del lote. Si la precisión se pondera por `xpWeight` y la métrica se recalcula
+perezosamente desde el registro de mutaciones —que es exactamente cómo funciona esta capa—, retocar el XP en
+`/studio/gamification` cambia la precisión de un alumno que no ha contestado nada: el reporte trimestral pasa
+de 78% a 71% solo. Un número que se mueve solo no se defiende en una junta. `Step` gana
+`assessmentWeight` independiente, y cada intento guarda `weightAtTime` para que el histórico sea inmutable.
+
+**H16 · En un examen, re-encolar es exposición de reactivo.** Si fallar revela la respuesta Y el paso
+reaparece al final, el alumno lo contesta ya sabiendo la respuesta, y el 50% de XP no significa nada.
+`policyFor(lesson)` deriva la política del tipo de lección: `test` y `checkpoint` no re-encolan, no revelan
+y no permiten pistas.
+
+**H17 · El re-encolado hacía que la barra RETROCEDIERA en el frame del rebote.** Dibujada como
+`hechos/total`, crecer el denominador y avanzar el numerador a la vez encoge la barra justo cuando dispara
+la celebración: la peor combinación posible de señales. `plannedSlots` solo crece y el estado publica una
+intención (`advance` | `extend`) para que la barra anime distinto en cada caso.
+
+**H18 · La actividad i.i.d. por día destruye las rachas, que son el gancho del producto.**
+Con `isActive(u,d) = u01(hash) < p·s` los días son independientes. Con p·s ≈ 0.35, P(racha vigente de 7
+días) = 0.35⁷ = 6.4e-4: **0.8 usuarios de 1,247**. El tablero de rachas toparía en 11 días y la demo no
+podría enseñar su propia mecánica central. Se sustituyó por una **cadena de Markov por usuario con estado de
+abandono absorbente**, materializada en el bitset durante el build.
+
+Y la primera calibración de esa cadena seguía sin funcionar —máximo 9 días, ninguna racha de 30— porque
+aplicaba el factor de fin de semana por igual a la persistencia y a la resurrección: con el sábado a 0.34,
+hasta el usuario más constante caía a 0.29. Es empíricamente falso: el factor de fin de semana es un
+promedio de POBLACIÓN, no una ley por persona, y quien lleva veinte días encadenados entra el sábado — eso
+es justo lo que la mecánica de racha provoca. La estacionalidad se aplica entera a la resurrección y
+amortiguada a la persistencia, con una sensibilidad por usuario. Resultado medido: racha máxima **64 días**,
+**108 personas con 7+**, **22 con 30+**, DAU 304 / WAU 738 / MAU 1,164, construcción en **5.6 ms**.
+
+**H19 · Un solver global de estacionalidad falsifica la propiedad estrella del diseño.** Si `scale[d]` se
+despeja contra la Σ de propensiones del roster VIGENTE, desactivar al usuario 812 mueve el factor y flipea
+~120 celdas de OTROS usuarios: el heatmap del alumno 42 se mueve porque se desactivó al 812, y la afirmación
+"crear al usuario 1248 no altera un bit" es literalmente falsa. Aquí no hay solver: los parámetros de cada
+usuario salen solo de su ordinal y la estacionalidad es una tabla fija. Hay una prueba que construye el
+mundo dos veces y compara los bitsets byte a byte.
+
+**H20 · La retención devuelve `null`, no 0%.** Una cohorte que ingresó hace tres días no tiene retención D7.
+Pintar 0% es un dato falso que en un dashboard nadie cuestiona y que alguien usaría para tomar una decisión.
