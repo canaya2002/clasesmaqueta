@@ -493,3 +493,116 @@ dialog::backdrop {
   font-size: var(--t-14);
   line-height: var(--lh-14);
 }
+
+/* ------------------------------------------------------------------- tarjetas y barras */
+.card {
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-paper);
+  box-shadow: var(--e1);
+}
+.quest-bar {
+  height: 10px;
+  border-radius: var(--r-full);
+  background: var(--bg-primary-subtle);
+  overflow: hidden;
+}
+.quest-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bg-primary);
+  transform-origin: left center;
+}
+
+/* ------------------------------------------------------------------------- liga */
+.league-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--bg-paper);
+  font-size: var(--t-14);
+}
+/* La zona NUNCA es solo color: lleva un borde lateral de 4px que se distingue sin ver el matiz. */
+.league-row[data-zone='up']   { border-inline-start: 4px solid var(--bg-success-solid); }
+.league-row[data-zone='down'] { border-inline-start: 4px solid var(--bg-danger-solid); }
+.league-row[data-zone='flat'] { border-inline-start: 4px solid transparent; }
+.league-row[data-me='true']   { background: var(--bg-primary-subtle); }
+
+/* -------------------------------------------------------------------- insignias */
+.badge-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+.badge {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: var(--r-lg);
+  background: var(--bg-paper);
+  box-shadow: var(--e1);
+  text-align: center;
+  height: 100%;
+}
+.badge__glyph {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-full);
+  font-size: 22px;
+  color: var(--fg-on-primary);
+}
+.badge[data-tier='bronze'] .badge__glyph { background: var(--bg-warning-solid); color: var(--fg-on-warning); }
+.badge[data-tier='silver'] .badge__glyph { background: var(--bg-info-solid);    color: var(--fg-on-info); }
+.badge[data-tier='gold']   .badge__glyph { background: var(--bg-xp-solid);      color: var(--fg-on-xp); }
+/* Bloqueada: el glifo se apaga pero el NOMBRE y la PISTA siguen legibles. Una insignia que no sabes que
+   existe no te mueve a hacer nada; lo que se esconde es el progreso, no la existencia. */
+.badge[data-locked='true'] .badge__glyph { background: var(--bg-canvas); color: var(--fg-subtle); }
+.badge[data-locked='true'] { opacity: 0.72; }
+.badge__name { font-size: var(--t-14); }
+.badge__hint { color: var(--fg-muted); font-size: var(--t-12); line-height: var(--lh-12); }
+
+/* --------------------------------------------------------------------- heatmap */
+.heatmap {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+  direction: ltr;
+}
+.heatmap__cell { aspect-ratio: 1; border-radius: 3px; background: var(--heat-0); }
+.heatmap__cell[data-level='1'] { background: var(--heat-1); }
+.heatmap__cell[data-level='2'] { background: var(--heat-2); }
+.heatmap__cell[data-level='3'] { background: var(--heat-3); }
+.heatmap__cell[data-level='4'] { background: var(--heat-4); }
+
+/* ------------------------------------------------------------------ pantallas */
+.screen { display: grid; gap: 14px; padding: 24px 16px 32px; }
+.screen__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-28);
+  color: var(--fg-default);
+}
+.screen__sub {
+  margin: -6px 0 4px;
+  color: var(--fg-muted);
+  font-size: var(--t-14);
+  line-height: var(--lh-14);
+  max-width: var(--measure);
+}
+
+.stat-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}

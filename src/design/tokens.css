@@ -127,6 +127,17 @@
   --t-36: 2.25rem;    --lh-36: 2.5rem;    --tr-36: -0.018em;
   --t-48: 3rem;       --lh-48: 3.25rem;   --tr-48: -0.024em;
   --measure: 34rem;
+
+  /* --- heatmap ---------------------------------------------------------------------------------
+   * Cinco escalones sobre la rampa de marca ya derivada, no colores nuevos: el heatmap tiene que
+   * pertenecer al sistema y no ser un semáforo aparte. El escalón 0 usa la línea y no el lienzo, para que
+   * un día sin práctica siga siendo una celda visible —un hueco invisible se lee como "no hay datos"
+   * cuando en realidad dice "no practicaste"—. */
+  --heat-0: var(--line-200);
+  --heat-1: var(--brand-300);
+  --heat-2: var(--brand-400);
+  --heat-3: var(--brand-600);
+  --heat-4: var(--brand-700);
   /* Fredoka tiene la altura de x ~9.2% mayor que Nunito al mismo font-size. Se aplica SOLO a cifras
    * display dentro de texto corrido; los títulos independientes no lo llevan, porque sus alturas de
    * mayúscula sí coinciden (0.7% de diferencia) y encogerlos no tendría motivo. */

@@ -16,7 +16,7 @@
 
 import { levelAt, levelThresholds } from '@/content/engine/economy';
 import { epochDayOf } from './day';
-import type { Basis, FoldOptions, FoldResult, LedgerEvent } from './types';
+import type { Basis, FoldOptions, FoldResult, LedgerEvent, TodayStats } from './types';
 
 const EMPTY_BASIS: Basis = {
   totalMilliXp: 0,
@@ -143,11 +143,21 @@ export function fold(events: readonly LedgerEvent[], opts: FoldOptions): FoldRes
   let chestsOpened = 0;
   let heartRefillsBought = 0;
 
+  // Lo de HOY se acumula en la MISMA pasada. Recorrer otra vez filtrando por `dayKey` abre la puerta a
+  // que el resumen del día y los totales usen criterios distintos de qué cuenta.
+  let todayXp = 0;
+  let todayLessons = 0;
+  let todayPerfect = 0;
+  let todayCombo = 0;
+  let todayScoreMilli = 0;
+  let todayWeight = 0;
+
   const clearedLessons = new Map<string, { times: number; bestAccuracyMilli: number }>();
   const unitLessons = new Map<string, Set<string>>();
   const xpByDayKey = new Map<string, number>();
   const activeDaySet = new Set<string>();
   const seenBadges = new Set<string>();
+  const claimedQuests = new Set<string>();
   const freezePurchaseDays: number[] = [];
 
   for (const e of ordered) {
@@ -172,7 +182,17 @@ export function fold(events: readonly LedgerEvent[], opts: FoldOptions): FoldRes
         gems += e.gemsGranted;
         gemsEarnedTotal += e.gemsGranted;
 
-        xpByDayKey.set(e.dayKey, (xpByDayKey.get(e.dayKey) ?? 0) + Math.round(milli / 1000));
+        const xp = Math.round(milli / 1000);
+        xpByDayKey.set(e.dayKey, (xpByDayKey.get(e.dayKey) ?? 0) + xp);
+
+        if (e.dayKey === asOf.todayKey) {
+          todayXp += xp;
+          todayLessons += 1;
+          if (e.perfect) todayPerfect += 1;
+          todayCombo = Math.max(todayCombo, e.maxCombo);
+          todayScoreMilli += e.accuracyMilli * e.weightTotal;
+          todayWeight += e.weightTotal;
+        }
 
         // Solo cuenta para progreso —y por tanto para la racha— si se jugó con las reglas completas.
         if (e.countsForProgress) {
@@ -194,6 +214,7 @@ export function fold(events: readonly LedgerEvent[], opts: FoldOptions): FoldRes
         break;
       case 'quest-claimed':
         questsClaimed += 1;
+        claimedQuests.add(e.questId);
         gems += e.gemsGranted;
         gemsEarnedTotal += e.gemsGranted;
         break;
@@ -262,12 +283,25 @@ export function fold(events: readonly LedgerEvent[], opts: FoldOptions): FoldRes
     xpToday: xpByDayKey.get(asOf.todayKey) ?? 0,
   };
 
+  const today: TodayStats = {
+    xp: todayXp,
+    lessons: todayLessons,
+    perfect: todayPerfect,
+    maxCombo: todayCombo,
+    weightedScoreMilli: todayScoreMilli,
+    weightTotal: todayWeight,
+  };
+
   return {
     basis,
+    today,
+    todayKey: asOf.todayKey,
+    todayEpochDay: asOf.todayEpochDay,
     completedUnits,
     clearedLessons,
     xpByDayKey,
     activeDayKeys,
     seenBadges,
+    claimedQuests,
   };
 }

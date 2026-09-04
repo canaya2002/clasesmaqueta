@@ -15,7 +15,7 @@ import { useVariant } from '@/design/MotionRoot';
  * `aria-current="page"` y no una clase: el lector de pantalla anuncia "página actual" sin que haya que
  * escribirlo en el texto, y el estilo cuelga del atributo, así que no pueden desincronizarse.
  */
-const DESTINATIONS = [
+export const DESTINATIONS = [
   { href: '/aprende', label: 'Aprender', glyph: '◆' },
   { href: '/practica', label: 'Practicar', glyph: '⟳' },
   { href: '/ligas', label: 'Ligas', glyph: '⬢' },

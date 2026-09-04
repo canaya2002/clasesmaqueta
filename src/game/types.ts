@@ -173,13 +173,29 @@ export type MonotoneCounter = (typeof MONOTONE_COUNTERS)[number];
  * completaron (el grafo es por ids, no por conteo), el test-out necesita la puntuación por unidad, y la
  * meta diaria necesita el XP por día. Se construyen en la MISMA pasada, así que no cuestan otra.
  */
+/** Lo hecho HOY. Las misiones diarias se miden contra esto y no contra los totales. */
+export interface TodayStats {
+  readonly xp: number;
+  readonly lessons: number;
+  readonly perfect: number;
+  readonly maxCombo: number;
+  readonly weightedScoreMilli: number;
+  readonly weightTotal: number;
+}
+
 export interface FoldResult {
   readonly basis: Basis;
+  readonly today: TodayStats;
+  /** El "hoy" con el que se plegó. Quien lea el resultado no puede volver a preguntarle al reloj. */
+  readonly todayKey: DayKey;
+  readonly todayEpochDay: number;
   readonly completedUnits: ReadonlySet<string>;
   readonly clearedLessons: ReadonlyMap<string, { readonly times: number; readonly bestAccuracyMilli: number }>;
   readonly xpByDayKey: ReadonlyMap<string, number>;
   readonly activeDayKeys: readonly string[];
   readonly seenBadges: ReadonlySet<string>;
+  /** Misiones ya cobradas. El id lleva el día dentro, así que no hace falta filtrar por fecha. */
+  readonly claimedQuests: ReadonlySet<string>;
 }
 
 /**
