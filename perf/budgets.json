@@ -3,14 +3,16 @@
   "firstLoadJsGzipKb": {
     "/": 132,
     "/kitchen-sink": 200,
-    "/leccion/[lessonId]": 275
+    "/leccion/[lessonId]": 275,
+    "/aprende": 250
   },
   "inlineBootScriptKb": 1.0,
   "notes": {
     "/": "Landing de una pantalla. Sin motion, sin mock.",
     "/kitchen-sink": "Carga el rig completo de la mascota, el bus de audio y la matriz de las 27. No es una ruta de producto: su techo es más alto a propósito.",
     "fontsPreloadedWoff2Kb": "Fredoka + Nunito VARIABLES, solo el rango latin precargado. Los demás rangos de unicode existen en disco y el navegador no los pide.",
-    "/leccion/[lessonId]": "Sube de 250 a 275 al entrar el contenido escrito por unidad (~14 KB comprimidos). Con red cero el catalogo ES la app: corpus, procedimientos y frases con hueco se materializan en el cliente, asi que viajan con la ruta por diseno, no por descuido. El motor de crecimiento a vigilar es OTRO: el barril de `meta` de las dinamicas, ~5 KB comprimidos cada una. El techo esta puesto para que la dinamica 12 lo reviente y obligue a decidir un registro de `meta` perezoso indexado por los tipos que la leccion usa."
+    "/leccion/[lessonId]": "Sube de 250 a 275 al entrar el contenido escrito por unidad (~14 KB comprimidos). Con red cero el catalogo ES la app: corpus, procedimientos y frases con hueco se materializan en el cliente, asi que viajan con la ruta por diseno, no por descuido. El motor de crecimiento a vigilar es OTRO: el barril de `meta` de las dinamicas, ~5 KB comprimidos cada una. El techo esta puesto para que la dinamica 12 lo reviente y obligue a decidir un registro de `meta` perezoso indexado por los tipos que la leccion usa.",
+    "/aprende": "El Camino: 190 lecciones, el HUD y el ledger. Comparte casi todo con el reproductor; lo propio de la ruta son los nodos y el modelo de camino."
   },
   "fontsPreloadedWoff2Kb": 80
 }

@@ -411,3 +411,85 @@ dialog::backdrop {
   }
   .app-nav__item[aria-current='page'] { background: var(--bg-primary-subtle); }
 }
+
+/* ------------------------------------------------------------------------ el camino */
+.path-node { display: flex; justify-content: center; }
+.path-node__hit {
+  display: grid;
+  place-items: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  border: 0;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.path-node__hit[aria-disabled='true'] { cursor: not-allowed; }
+.path-node__disc {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--r-full);
+  font-size: 24px;
+  /* La sombra sólida del sistema: el disco es un botón 3D, no un círculo plano. */
+  box-shadow: 0 5px 0 0 var(--disc-shadow, var(--border-strong));
+  transition: none;
+}
+.path-node__disc[data-state='done']      { background: var(--bg-success-solid); color: var(--fg-on-success); --disc-shadow: var(--mint-shadow); }
+.path-node__disc[data-state='current']   { background: var(--bg-primary); color: var(--fg-on-primary); --disc-shadow: var(--brand-shadow); }
+.path-node__disc[data-state='available'] { background: var(--bg-paper); color: var(--fg-default); --disc-shadow: var(--border-strong); }
+.path-node__disc[data-state='locked']    { background: var(--bg-canvas); color: var(--fg-subtle); --disc-shadow: var(--border-default); opacity: 0.75; }
+
+/* El empujón del candado: el único movimiento que se permite en un control inerte, y dice "no se puede". */
+.path-node__hit[data-nudge='true'] .path-node__disc { animation: path-nudge 320ms ease-out; }
+@keyframes path-nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .path-node__hit[data-nudge='true'] .path-node__disc { animation: none; outline: 3px solid var(--border-strong); }
+}
+
+/* ------------------------------------------------------------- armazón de la App */
+.app-shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--bg-canvas);
+}
+.app-shell__main { width: 100%; max-width: 640px; margin-inline: auto; }
+
+@media (min-width: 900px) {
+  .app-shell { padding-inline-start: 216px; }
+}
+
+/* El banner: es el candidato a LCP y se pinta desde HTML estático. */
+.path-banner {
+  padding: 28px 20px 4px;
+  text-align: center;
+}
+.path-banner__eyebrow {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--t-12);
+  font-weight: 800;
+  letter-spacing: var(--tr-12);
+  text-transform: uppercase;
+}
+.path-banner__title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: var(--t-36);
+  line-height: var(--lh-36);
+  color: var(--fg-default);
+}
+.path-banner__sub {
+  margin: 6px auto 0;
+  max-width: var(--measure);
+  color: var(--fg-muted);
+  font-size: var(--t-14);
+  line-height: var(--lh-14);
+}

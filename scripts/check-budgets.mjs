@@ -68,6 +68,41 @@ if (existsSync(manifestPath)) {
   }
 }
 
+/* --- el candidato a LCP ------------------------------------------------------------------------
+ *
+ * "LCP de /aprende por debajo de 2.0 s" NO se puede medir en este repo: no hay navegador en
+ * devDependencies y vitest corre en jsdom, que no hace layout ni pinta. Un criterio de aceptación que no
+ * se puede medir no existe, así que se sustituye por el que SÍ se puede comprobar y es el que de verdad
+ * decide el número: que el elemento más grande del primer viewport esté en el HTML ESTÁTICO y aparezca
+ * ANTES que cualquier esqueleto.
+ *
+ * Si el título viviera dentro de la isla cliente, el primer paint sería el esqueleto y el LCP se mediría
+ * contra él. Un esqueleto que "carga rápido" no es una pantalla que aparece rápido.
+ */
+const LCP_ROUTES = [{ file: 'aprende.html', needle: 'path-banner__title' }];
+
+for (const { file, needle } of LCP_ROUTES) {
+  const path = join(NEXT, 'server', 'app', file);
+  if (!existsSync(path)) {
+    console.error(`check-budgets: no existe ${file}; la ruta dejo de ser estatica.`);
+    failed += 1;
+    rows.push({ metric: `LCP estatico ${file}`, measured: 'SIN HTML', budget: 'estatico', delta: '—', verdict: 'ERROR' });
+    continue;
+  }
+  const html = readFileSync(path, 'utf8');
+  const at = html.indexOf(needle);
+  const skeleton = html.indexOf('skeleton');
+  const ok = at >= 0 && (skeleton < 0 || at < skeleton);
+  if (!ok) failed += 1;
+  rows.push({
+    metric: `LCP estatico ${file}`,
+    measured: at < 0 ? 'ausente' : skeleton >= 0 && at > skeleton ? 'tras esqueleto' : 'en HTML',
+    budget: 'estatico',
+    delta: '—',
+    verdict: ok ? 'OK' : 'EXCEDIDO',
+  });
+}
+
 /* --- fuentes ---------------------------------------------------------------------------------
  *
  * Se mide lo que el NAVEGADOR PIDE, no lo que hay en disco.
