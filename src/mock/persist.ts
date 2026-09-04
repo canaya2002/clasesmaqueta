@@ -25,6 +25,7 @@ export type BudgetKey =
   | 'settings'
   | 'boot-digest'
   | 'progress'
+  | 'hearts'
   | 'gamification'
   | 'branding'
   | 'content-overlay'
@@ -40,6 +41,9 @@ export const BUDGET: Readonly<Record<BudgetKey, number>> = {
   settings: 512,
   'boot-digest': 512,
   progress: 300_000,
+  // Tamano fijo: un solo objeto de seis numeros. Va aparte de `progress` porque se escribe con otra
+  // cadencia y porque no puede compartir destino de desalojo con el registro de intentos.
+  hearts: 512,
   gamification: 4_096,
   branding: 1_024,
   'content-overlay': 262_144,
@@ -67,7 +71,7 @@ export const EVICTION_ORDER: readonly BudgetKey[] = [
 ];
 
 /** Claves que NUNCA se desalojan: sin ellas la demo no arranca. */
-const NEVER_EVICT: readonly BudgetKey[] = ['meta', 'settings', 'boot-digest', 'progress'];
+const NEVER_EVICT: readonly BudgetKey[] = ['meta', 'settings', 'boot-digest', 'progress', 'hearts'];
 
 export type Store = 'local' | 'session';
 
@@ -165,6 +169,7 @@ const BUDGET_KEYS = [
   'settings',
   'boot-digest',
   'progress',
+  'hearts',
   'gamification',
   'branding',
   'content-overlay',

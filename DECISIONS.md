@@ -534,3 +534,135 @@ ejercicio ya es 100% resoluble con teclado y con ratón —tocar toma, la barra 
 criterio de aceptación, y el arrastre es una afordancia encima. Se implementa en la Fase 7 junto con
 `sort-buckets`, que comparte la misma maquinaria, y con la neutralización de la región `aria-live`
 `assertive` que `<DndContext>` monta por su cuenta y que competiría con las dos del anfitrión.
+
+---
+
+## 9. Hallazgos de la Fase 4 (dos críticos: shell y economía de corazones)
+
+Lancé dos críticos adversariales sobre el diseño del reproductor antes de terminarlo, y verifiqué sus
+números yo mismo antes de aplicar nada. Uno de ellos —H33— criticaba un fallo que mi código ya no tenía: el
+crítico revisó el PLAN, no el archivo. Los demás eran reales, y tres estaban ya escritos en el código.
+
+### Lo que estaba mal en lo que ya había escrito
+
+**H33 · Los corazones leían el reloj DOS veces por transición.** `snapshot()` muestreaba en
+`elapsedSinceRefill` y otra vez dentro de `applyRefills`, y `spendHeart` no acumulaba antes de descontar.
+Con el contador en 1, que venciera una recarga en el mismo milisegundo en que el alumno falla daba un
+resultado u otro según qué función hubiera corrido primero. Ahora hay un solo punto de entrada,
+`reduceHearts(record, evento, muestra, cfg)`, que **acumula antes de consumir** sobre UNA muestra tomada en
+el borde. El empate resuelve a "te queda uno", que es la respuesta amable y, sobre todo, la determinista.
+
+**H34 · Llenarse acumulando no re-anclaba el sello, y eso regalaba el siguiente corazón.** La comprobación
+"¿está lleno?" estaba a la ENTRADA de la acumulación, así que pasar de 4 a 5 conservaba un residuo de horas.
+El alumno perdía uno y le volvía en segundos. Lo cazó una prueba que escribí para otra cosa. La comprobación
+ahora va sobre el RESULTADO.
+
+**H35 · `data-hotkey` solo se emitía después de detectar teclado.** Es el mismo `keydown` el que descubre
+que hay teclado y el que busca el objetivo, y en ese orden el objetivo todavía no existe: **la primerísima
+tecla de cada lección no hacía nada**. El atributo va siempre; la insignia visible sigue apareciendo solo
+con teclado.
+
+**H36 · `node.click()` sobre el `<span>` envolvente no activaba el botón de dentro.** El evento se despacha
+sobre el span y burbujea hacia ARRIBA. El atajo se veía declarado, se veía buscado, y no hacía nada — la
+forma más cara de romper el teclado, porque no falla en ningún sitio visible. `activateHotkey()` desciende
+al primer descendiente interactivo.
+
+**H37 · Cuatro variantes del catálogo combinaban un muelle con tres fotogramas.** `motion` **lanza** con
+eso, no degrada: excepción sin capturar en el frameloop y el elemento simplemente no se mueve. Encontré tres
+con `grep` y la cuarta —`pairSolved.solved.opacity`— la encontró el invariante que escribí después. Un pulso
+son tres fotogramas y por eso no puede ser un muelle: ahora usa `PULSE`, con rebase en la curva del primer
+tramo para conservar el carácter elástico.
+
+**H38 · La región `aria-live` del veredicto vivía DENTRO del panel de feedback.** El panel va `inert`
+mientras está cerrado, e `inert` saca el subárbol del árbol de accesibilidad: la región dejaba de anunciar
+exactamente cuando hacía falta. Las dos regiones viven ahora en el shell, montadas y vacías desde el primer
+paint, y nunca reciben `inert`.
+
+**H39 · El overlay estaba duplicado.** `SessionState` ya tenía `overlay`, y yo había puesto un `useState`
+paralelo en el componente: el reducer abría "sin corazones" al calificar y el shell no se enteraba. Además
+`OPEN_OVERLAY` pone `advanceAtMs` en `null`, así que ahora el cronómetro del paso se detiene mientras el
+alumno decide si sale, y el tiempo del resumen no incluye esa pausa.
+
+**H40 · El presupuesto de la ruta nueva midió 0 KB y salió verde.** Las rutas viven bajo grupos —`(player)`—
+que no aparecen en la URL, y `check-budgets.mjs` buscaba la clave exacta y se rendía. Un presupuesto que
+mide cero es peor que no tenerlo. Ahora normaliza los grupos y **medir cero es un fallo duro**.
+
+### Lo que el crítico señaló y era cierto
+
+**H41 · El gesto de atrás destruía la sesión.** Deslizar desde el borde en móvil es el gesto más frecuente
+que existe y navegaba al mapa perdiendo el progreso en memoria — justo lo que el plan decía evitar al no
+usar `role="dialog"`, pero sin nada que lo impidiera. Sentinel de `history` más `popstate`: el gesto se
+convierte en lo que el alumno quería decir, que es una pregunta.
+
+**H42 · Enfocar por MONTAJE no cubre las transiciones sin montaje.** Hay al menos cinco: un paso re-encolado
+que React reusa, el cierre de un modal cuyo origen ya se desmontó, la vuelta a la pestaña, el paso a resumen
+y la resolución del chunk perezoso. `useFocusDirective(token, ref)` dispara por TOKEN, con `useLayoutEffect`
+para que no se pinte un frame con el foco en `body`, y `useBodyFocusGuard` como red. El encabezado vive
+FUERA del límite de `Suspense` a propósito, y la prueba de teclado lo asegura explícitamente.
+
+**H43 · El enlace de salto llevaba a "Salir".** Hacer de la acción destructiva el primer tabstop es
+exactamente al revés. Ahora lleva al ejercicio; salir se queda en el encabezado y en `Esc`.
+
+**H44 · El teclado no estaba acotado.** Faltaban tres guardas y las tres son reales en es-MX: `isComposing`
+y `keyCode === 229` (escribir "á" con tecla muerta disparaba atajos), el descarte de `Enter` cuando el foco
+ya está en un botón (si no, "Reportar" Y avanzar de paso en la misma pulsación), y campos de texto que se
+quedan con todo salvo `Enter` y `Escape`.
+
+**H45 · Un antirrebote temporal no protege contra Enter sostenido.** El crítico calculó que con repetición a
+30 ms el hueco reabre y el alumno se salta el feedback. Mi código ya descartaba `event.repeat`, así que el
+cálculo no aplicaba tal cual; pero la observación de fondo era buena: **el candado no debe ser tiempo**.
+Ahora exige una pulsación física nueva (`armed` se rearma en el `keyup`), y el piso temporal que queda son
+400 ms **derivados** de la ventana del acumulador del `LiveAnnouncer` — por debajo de eso, avanzar cancela
+sistemáticamente el anuncio del veredicto.
+
+**H46 · Faltaba el techo de otorgamiento sin señal monótona.** Con la época monótona intacta, adelantar el
+reloj del sistema no regala nada. Pero a través de una RECARGA de página no queda señal monótona, y ahí el
+tope de 24 h no sirve porque 24 h ya son más recargas que el máximo. `maxUntrustedGrant` pone el exploit en
+"una recarga por corazón" en vez de "barra libre". La prueba lo fija en los dos sentidos.
+
+**H47 · `resolveHearts` mezclaba un interruptor de apagado con un techo, y le faltaba el sexto.** Ahora
+devuelve `{ hud, consumes, reason, practiceBadge }` con seis reglas ordenadas: `hidden`/`counter`/`infinite`
+son tres estados, no un booleano, y `reason` existe para que el Studio pueda decir POR QUÉ están apagados en
+vez de que haya que adivinar cuál de los seis ganó. El modo práctica va ANTES del potenciador: quien eligió
+"practicar sin corazones" necesita saber que sigue sin progreso aunque tenga un potenciador vigente.
+
+**H48 · La cuenta regresiva a 4 Hz repintaba de más y se desincronizaba.** Ahora es 1 Hz alineada al borde
+de segundo (`msLeft % 1000`, sin deriva), vive en `hearts-ticker.ts` fuera de React, escribe por
+`textContent` —cero `setState` por tick—, se recalcula SIEMPRE desde el registro en vez de decrementar, se
+recalcula al volver a la pestaña y se detiene sola cuando no hay nada que contar.
+
+**H49 · El teclado virtual no encoge `100dvh` en iOS Safari.** En un iPhone SE eso deja el input de
+completar el espacio literalmente debajo del teclado. `useVisualViewportVars` escribe `--app-h` y
+`--kb-inset`, y el panel usa `min-height`, no `height`.
+
+**H50 · El modal de "sin corazones" no puede cerrarse con `Escape`.** No es una interrupción que se
+descarta: es un estado del juego con tres salidas, y cerrarlo devolvería al alumno a un ejercicio que no
+puede contestar. `dismissable={false}`.
+
+### Decisiones tomadas al aplicar la crítica
+
+**D23 · Los modales son `<dialog>` nativo con `showModal()`.** Da atrapado de foco real —incluido el del
+navegador y sus extensiones—, inertiza el resto del documento sin recorrerlo poniendo `aria-hidden`, y sube
+el nodo a la capa superior para que ningún `z-index` lo tape. Tres cosas que una implementación manual hace
+mal casi siempre.
+
+**D24 · El resumen es un ESTADO del shell, no una ruta.** Con `router.push` el gesto de atrás vuelve al
+último paso de una sesión que ya no existe en memoria, y el App Router no mueve el foco al navegar.
+
+**D25 · El barril de metadatos de las dinámicas se importa en la RUTA del reproductor, no en el layout
+raíz.** Cada `meta` pesa unos 5 KB comprimidos y solo el reproductor necesita poder montar cualquier tipo.
+
+### Lo que queda declarado como pendiente
+
+- **El presupuesto del reproductor.** 226.8 KB de 250. Con las 14 dinámicas el barril de `meta` sube unos
+  38 KB y lo revienta. El techo está puesto para que la dinámica 12 obligue a decidir —registro de `meta`
+  perezoso indexado por los tipos que la lección realmente usa— y no para absorberlo en silencio.
+- **Elección de líder entre pestañas para los corazones** (BroadcastChannel más lease). Hoy dos pestañas se
+  ven como épocas distintas y caen a la vía de pared, que ya está topada por `maxUntrustedGrant`. El
+  agujero real que queda es cosmético: las dos pestañas pueden mostrar contadores distintos hasta el
+  siguiente evento.
+- **Congelar `countsForProgress` en cada intento.** Hoy "practicar sin corazones" solo afecta a los intentos
+  POSTERIORES porque el `runtime` deja de persistir, que es el comportamiento correcto; pero la bandera no
+  viaja dentro del intento, así que la analítica de la Fase 8 no podrá separar los dos casos en el embudo.
+- **La ruta interceptada** `(app)/@player/(.)leccion/[lessonId]`. La ruta real ya existe y es la que resuelve
+  un enlace profundo; la interceptación necesita el mapa, que es Fase 5.

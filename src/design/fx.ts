@@ -36,6 +36,10 @@ export interface Origin {
  */
 export async function confetti(origin: Origin, wave: 1 | 2 = 1): Promise<void> {
   if (reduced) return;
+  // El contexto 2D puede no existir: modos de privacidad que bloquean canvas, aceleracion desactivada,
+  // entornos sin canvas. `canvas-confetti` no lo comprueba y estalla en su primer frame, DESPUES de que la
+  // pantalla de recompensa ya se pinto — una excepcion sin capturar en la mejor pantalla de la demo.
+  if (document.createElement('canvas').getContext('2d') === null) return;
   const mod = await import('canvas-confetti');
   const fire = mod.default;
   const common = {

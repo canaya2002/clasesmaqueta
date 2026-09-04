@@ -325,3 +325,32 @@ h1, h2, h3, h4 {
   white-space: nowrap;
   border: 0;
 }
+
+/* El fondo del <dialog> nativo. Es el único blur autorizado junto con `--overlay-shadow`: un overlay flota
+   sobre contenido arbitrario y no puede confiar en el contraste de lo que tenga debajo. */
+dialog::backdrop {
+  background: rgb(22 18 31 / 0.45);
+  backdrop-filter: blur(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog::backdrop { backdrop-filter: none; }
+}
+
+/* Enlace de salto: invisible hasta que recibe el foco, y entonces visible de verdad. `sr-only` con un
+   `:focus` que lo revierte es el patrón, pero hay que revertir TODAS sus propiedades o queda un rectángulo
+   de 1px enfocado que nadie ve. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 10;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  color: var(--fg-default);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus-visible { transform: translateY(0); }

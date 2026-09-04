@@ -61,6 +61,22 @@ export interface VariantSpec {
 
 /* ----------------------------------------------------------------- catálogo */
 
+/**
+ * Transicion de PULSO: tres fotogramas, y por eso NO puede ser un muelle.
+ *
+ * `motion` solo admite dos fotogramas con `type: 'spring'` y lanza en tiempo de ejecucion con tres — no
+ * degrada, no avisa en consola: revienta la animacion. Y un muelle de dos fotogramas tampoco sirve aqui,
+ * porque un pulso tiene que VOLVER al reposo y un muelle se asienta en su destino.
+ *
+ * La curva del primer tramo lleva rebase (el cuarto control pasa de 1) para conservar el caracter elastico
+ * que se buscaba con `spring.pop`.
+ */
+const PULSE: Transition = {
+  duration: 0.34,
+  times: [0, 0.38, 1],
+  ease: ['backOut', 'easeInOut'],
+};
+
 export const CATALOG = {
   /* --- feedback de respuesta --- */
   feedbackCorrect: {
@@ -93,7 +109,7 @@ export const CATALOG = {
     channel: 'emphasis',
     full: {
       idle: { scale: 1 },
-      pulse: { scale: [1, 1.12, 1], transition: spring.pop },
+      pulse: { scale: [1, 1.12, 1], transition: PULSE },
     },
   },
 
@@ -160,14 +176,16 @@ export const CATALOG = {
     channel: 'emphasis',
     full: {
       rest: { scale: 1 },
-      picked: { scale: [1, 1.03, 1], transition: spring.pop },
+      picked: { scale: [1, 1.03, 1], transition: PULSE },
     },
   },
   pairSolved: {
     channel: 'emphasis',
     full: {
       rest: { opacity: 1, scale: 1 },
-      solved: { opacity: [1, 0.55, 0.25], scale: 0.96, transition: spring.soft },
+      // Dos fotogramas, no tres: un muelle no admite mas, y el intermedio no aportaba nada que la propia
+      // curva del muelle no haga ya. Un par resuelto se atenua; no parpadea.
+      solved: { opacity: 0.25, scale: 0.96, transition: spring.soft },
     },
   },
   itemGrab: {
@@ -204,7 +222,7 @@ export const CATALOG = {
     channel: 'emphasis',
     full: {
       rest: { scale: 1 },
-      active: { scale: [1, 1.18, 1], transition: spring.pop },
+      active: { scale: [1, 1.18, 1], transition: PULSE },
     },
   },
   modalIn: {

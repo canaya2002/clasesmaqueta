@@ -2,13 +2,15 @@
   "$comment": "Única fuente de verdad de los presupuestos. scripts/check-budgets.mjs lo lee y sale con código 1. Escribir los números en el README y confiar es lo que hace que nadie los mida.",
   "firstLoadJsGzipKb": {
     "/": 132,
-    "/kitchen-sink": 200
+    "/kitchen-sink": 200,
+    "/leccion/[lessonId]": 250
   },
   "inlineBootScriptKb": 1.0,
   "notes": {
     "/": "Landing de una pantalla. Sin motion, sin mock.",
     "/kitchen-sink": "Carga el rig completo de la mascota, el bus de audio y la matriz de las 27. No es una ruta de producto: su techo es más alto a propósito.",
-    "fontsPreloadedWoff2Kb": "Fredoka + Nunito VARIABLES, solo el rango latin precargado. Los demás rangos de unicode existen en disco y el navegador no los pide."
+    "fontsPreloadedWoff2Kb": "Fredoka + Nunito VARIABLES, solo el rango latin precargado. Los demás rangos de unicode existen en disco y el navegador no los pide.",
+    "/leccion/[lessonId]": "El reproductor carga el motor, zod y los metadatos de las 7 dinamicas (el barril de `meta`, sin UI: los players son `lazy`). Con las 14 el barril sube ~38 KB; el techo esta puesto para que la 12 lo reviente y obligue a decidir, no para absorberlo en silencio."
   },
   "fontsPreloadedWoff2Kb": 80
 }

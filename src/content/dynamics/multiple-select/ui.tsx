@@ -39,8 +39,12 @@ function Player({ data, draft, onDraft, phase, revealed, rng, disabled, inputMod
           : 'Puede haber más de una respuesta correcta.'}
       </p>
       <div role="group" aria-labelledby="step-prompt" style={{ display: 'grid', gap: 8 }}>
+      {/* El ATRIBUTO `data-hotkey` va siempre que la opcion sea contestable; la INSIGNIA visible solo
+          cuando ya sabemos que hay teclado. Condicionar el atributo a la modalidad hace que la primerisima
+          tecla de la leccion no haga nada: es el mismo keydown el que descubre el teclado y el que buscaria
+          el objetivo, y en ese orden el objetivo todavia no existe. */}
         {options.map((o, i) => (
-          <span key={o.id} {...(inputModality === 'keyboard' && !answered ? { 'data-hotkey': String(i + 1) } : {})}>
+          <span key={o.id} {...(answered ? {} : { 'data-hotkey': String(i + 1) })}>
             <OptionRow
               label={o.text}
               selected={chosen.has(o.id)}

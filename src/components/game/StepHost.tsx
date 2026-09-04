@@ -15,6 +15,7 @@ import type { ErasedDynamic, GradeResult } from '@/content/engine/dynamic';
 import type { Json } from '@/content/engine/primitives';
 import { playerRegistry } from '@/content/dynamics/ui-registry';
 import type { ErasedPlayerProps, InputModality, StepUiPhase } from '@/content/engine/ui';
+import { activateHotkey } from '@/lib/a11y/hotkeys';
 import { EMPTY_LIVE, LiveAnnouncer, type LiveState } from '@/lib/a11y/live-announcer';
 import { Button3D } from '@/components/ui/Button3D';
 import { Verdict } from '@/content/dynamics/_shared/Verdict';
@@ -145,11 +146,7 @@ export function StepHost({ dynamic, data, instanceId, explanation }: StepHostPro
         return;
       }
       if (!/^[1-9]$/.test(event.key) || phase !== 'answering') return;
-      const node = containerRef.current?.querySelector(`[data-hotkey="${event.key}"]`);
-      if (node instanceof HTMLElement) {
-        event.preventDefault();
-        node.click();
-      }
+      if (activateHotkey(containerRef.current, event.key)) event.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

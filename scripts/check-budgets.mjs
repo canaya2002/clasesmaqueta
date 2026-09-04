@@ -32,10 +32,22 @@ if (existsSync(manifestPath)) {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   for (const [route, limit] of Object.entries(budgets.firstLoadJsGzipKb)) {
     const key = route === '/' ? '/page' : `${route}/page`;
-    const files = manifest.pages[key] ?? manifest.pages[`/(marketing)${key}`] ?? [];
-    const unique = [...new Set(files)];
+    // Las rutas viven bajo grupos —(marketing), (app), (player)— que NO aparecen en la URL. Buscar la
+    // clave exacta y rendirse deja el presupuesto midiendo 0 KB, que es peor que no tenerlo: queda verde
+    // para siempre y nadie se entera de que dejo de medir.
+    const suffix = key;
+    const match =
+      manifest.pages[key] ??
+      Object.entries(manifest.pages).find(([k]) => k.replace(/\/\([^)]*\)/g, '') === suffix)?.[1];
+    if (match === undefined) {
+      console.error(`check-budgets: la ruta ${route} no existe en el manifiesto. Presupuesto sin medir.`);
+      failed += 1;
+      rows.push({ metric: `First Load JS ${route}`, measured: 'SIN MEDIR', budget: `${limit} KB`, delta: '—', verdict: 'ERROR' });
+      continue;
+    }
+    const unique = [...new Set(match)];
     const kb = unique.reduce((sum, f) => sum + gzipKb(join(NEXT, f)), 0);
-    const ok = kb <= limit;
+    const ok = kb <= limit && kb > 0;
     if (!ok) failed += 1;
     rows.push({ metric: `First Load JS ${route}`, measured: `${kb.toFixed(1)} KB`, budget: `${limit} KB`, delta: `${(kb - limit).toFixed(1)} KB`, verdict: ok ? 'OK' : 'EXCEDIDO' });
   }
