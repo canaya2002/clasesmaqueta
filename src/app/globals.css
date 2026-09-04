@@ -667,3 +667,55 @@ dialog::backdrop {
   cursor: pointer;
   min-height: var(--tap-min);
 }
+
+/* ------------------------------------------------------------------------ landing */
+.landing {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 48px 20px;
+  text-align: center;
+  background: var(--bg-canvas);
+}
+.landing__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-48);
+  line-height: var(--lh-48);
+  letter-spacing: var(--tr-48);
+  color: var(--fg-default);
+}
+.landing__sub {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--fg-muted);
+  font-size: var(--t-18);
+  line-height: var(--lh-18);
+}
+.landing__doors {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  width: min(100%, 720px);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.landing__door {
+  display: grid;
+  gap: 6px;
+  height: 100%;
+  padding: 20px;
+  border-radius: var(--r-lg);
+  background: var(--bg-paper);
+  box-shadow: var(--e2);
+  color: var(--fg-default);
+  text-decoration: none;
+  text-align: start;
+}
+.landing__door strong { font-family: var(--font-display); font-size: var(--t-18); }
+.landing__door span { color: var(--fg-muted); font-size: var(--t-14); line-height: var(--lh-14); }
+.landing__door em { margin-top: auto; color: var(--fg-primary); font-style: normal; font-weight: 800; font-size: var(--t-14); }
+.landing__mascot { width: 132px; height: auto; }

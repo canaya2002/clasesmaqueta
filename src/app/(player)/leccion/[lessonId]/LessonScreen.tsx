@@ -103,7 +103,7 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
       lesson={load.lesson}
       runtime={runtime}
       econ={econ}
-      onExit={() => router.replace('/')}
+      onExit={() => router.replace('/aprende')}
       onFinish={onFinish}
     />
   );

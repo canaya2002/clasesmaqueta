@@ -20,6 +20,7 @@ export function ComboMeter({ run, multiplier }: { readonly run: number; readonly
 
   return (
     <motion.div
+      data-mi="03"
       variants={pulse}
       initial="rest"
       animate={run >= 3 ? 'pulse' : 'rest'}

@@ -74,6 +74,7 @@ export function Modal({
     >
       <motion.div
         ref={bodyRef}
+        data-mi="19"
         variants={inVariant}
         initial="out"
         animate="in"

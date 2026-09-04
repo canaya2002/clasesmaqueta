@@ -38,7 +38,7 @@ export function AppNav() {
                 href={d.href}
                 aria-current={current ? 'page' : undefined}
                 className="app-nav__item"
-                data-mi="19"
+                data-mi="17"
               >
                 <motion.span
                   aria-hidden="true"

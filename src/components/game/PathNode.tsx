@@ -70,7 +70,7 @@ export function PathNode({ lessonId, title, state, kind, offset }: PathNodeProps
 
   return (
     <div className="path-node" style={{ transform: `translateX(${String(offset)}px)` }}>
-      <Link href={`/leccion/${lessonId}`} aria-label={label} className="path-node__hit" data-mi="03">
+      <Link href={`/leccion/${lessonId}`} aria-label={label} className="path-node__hit">
         {body}
       </Link>
     </div>
