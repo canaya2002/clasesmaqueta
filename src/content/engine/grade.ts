@@ -29,6 +29,25 @@ export interface LessonResult {
   readonly maxCombo: number;
   readonly elapsedMs: number;
   readonly perfect: boolean;
+
+  /**
+   * El XP de los pasos con el PRECIO factorizado fuera. Es el escalar que se guarda en el ledger.
+   *
+   * `stepMilli = xpBase · difficultyFactor · xpUnitsMilli`, exactamente, porque los dos factores son
+   * comunes a todos los sumandos. Guardar en su lugar la suma de los `xpWeight` —que era el diseño
+   * original— destruye el emparejamiento: `combo`, `replay` y `hint` varían POR PASO, así que ningún
+   * multiplicador aplicado después acierta. Medido con la economía por defecto en una lección de 10 pasos
+   * de dificultad 3, todos correctos a la primera: `gradeLesson` paga 66 XP, reconstruir con el combo
+   * máximo da 81 (+22.7%) y sin combo da 46 (−30.3%). No hay elección buena porque el dato ya se tiró.
+   *
+   * La regla que separa los dos grupos: se CONGELA lo que hizo el usuario —combo, reintentos, pista,
+   * acierto— y se DERIVA lo que cobra la casa —`xpBase`, `difficultyFactor`—. Por eso mover el XP en el
+   * Studio mueve el total histórico al instante y aun así el HUD cuadra con los resúmenes ya vistos.
+   */
+  readonly xpUnitsMilli: number;
+
+  /** Se congela el HECHO (terminó rápido), no el importe: el bono se deriva de la economía vigente. */
+  readonly paceBonusEarned: boolean;
 }
 
 export interface GradeLessonOptions {
@@ -46,6 +65,7 @@ export function gradeLesson(attempts: readonly Attempt[], opts: GradeLessonOptio
   const difficultyFactor = econ.difficultyFactor[opts.difficulty - 1] ?? 1;
 
   let stepMilli = 0;
+  let xpUnitsMilli = 0;
   let weightedScore = 0;
   let weightTotal = 0;
   let correctFirstTry = 0;
@@ -72,7 +92,9 @@ export function gradeLesson(attempts: readonly Attempt[], opts: GradeLessonOptio
     const replay = a.attemptIndex > 0 ? opts.policy.requeueXpFactor : 1;
     const hint = a.usedHint ? econ.hintXpFactor : 1;
     // Todo en milésimas enteras: el redondeo ocurre UNA vez, al cerrar la lección.
-    stepMilli += econ.xpBase * xpWeight * difficultyFactor * combo * replay * hint * a.score * 1000;
+    const units = xpWeight * combo * replay * hint * a.score * 1000;
+    xpUnitsMilli += units;
+    stepMilli += econ.xpBase * difficultyFactor * units;
   }
 
   const perfect = firstTryCount > 0 && correctFirstTry === firstTryCount;
@@ -91,5 +113,7 @@ export function gradeLesson(attempts: readonly Attempt[], opts: GradeLessonOptio
     maxCombo,
     elapsedMs,
     perfect,
+    xpUnitsMilli,
+    paceBonusEarned: paceBonus > 0,
   };
 }

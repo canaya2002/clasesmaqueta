@@ -60,20 +60,19 @@ function weekdayMon0(absDay: number): number {
 }
 
 /**
- * El día ABSOLUTO en que un usuario abandona, o `null`.
+ * El sorteo de abandono, PURO en el día absoluto.
  *
- * Es una función PURA del usuario y del calendario, y esa es la corrección importante. Antes el abandono
- * era un estado absorbente sorteado DENTRO del recorrido: bastaba con que la ventana empezara un día antes
- * para que alguien abandonara en otra fecha, y a partir de ahí su historia entera cambiaba. Como el estado
- * es absorbente, la cadena no lo olvidaba nunca: por eso el 6% de los bits cambiaba cada noche y no
- * decaía con el tiempo.
+ * La corrección no es que sea aleatorio —siempre lo fue—, es que antes se sorteaba SOLO en los días
+ * inactivos, así que dependía del camino. Bastaba con que la ventana empezara un día antes para que
+ * alguien abandonara en otra fecha, y como el abandono es un estado ABSORBENTE, la cadena no lo olvidaba
+ * nunca: por eso el 6% de divergencia que medí no decaía con el tiempo.
+ *
+ * Ahora se tira todos los días y solo depende de `(usuario, día absoluto)`. Va dentro del mismo bucle y no
+ * en una pasada aparte: la pasada aparte costaba hasta 120 iteraciones más por usuario y sacó el arranque
+ * del presupuesto de 50 ms —lo cazó la prueba de presupuesto, que para eso está—.
  */
-function churnAbsDay(ordinal: number, hazard: number, fromAbs: number, toAbs: number): number | null {
-  if (hazard <= 0) return null;
-  for (let abs = fromAbs; abs <= toAbs; abs += 1) {
-    if (u01(mix32(NS.churn, ordinal, abs)) < hazard) return abs;
-  }
-  return null;
+function churnsOn(ordinal: number, hazard: number, absDay: number): boolean {
+  return hazard > 0 && u01(mix32(NS.churn, ordinal, absDay)) < hazard;
 }
 
 /** Dos campañas de Recursos Humanos. Fijas: no dependen de cuánta gente haya en el roster. */
@@ -165,16 +164,21 @@ export function buildActivityIndex(): ActivityIndex {
 
   for (let u = 0; u < USER_COUNT; u += 1) {
     const p = paramsFor(u);
-    const churnAbs = churnAbsDay(u, p.churnHazard, absFirst + p.joinDay, absToday);
+    let churned = false;
     let active = false;
     let run = 0;
     let best = 0;
 
     for (let d = 0; d < HISTORY_DAYS; d += 1) {
       const abs = absFirst + d;
-      if (d < p.joinDay || (churnAbs !== null && abs >= churnAbs)) {
+      if (d < p.joinDay || churned) {
         run = 0;
-        if (churnAbs !== null && abs === churnAbs) churnedAt[u] = d;
+        continue;
+      }
+      if (churnsOn(u, p.churnHazard, abs)) {
+        churned = true;
+        churnedAt[u] = d;
+        run = 0;
         continue;
       }
 

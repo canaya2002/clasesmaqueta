@@ -102,6 +102,24 @@ export default tseslint.config(
         {
           zones: [
             {
+              target: './src/game',
+              from: './src/lib/clock.ts',
+              message:
+                'src/game/** no lee el reloj: el "hoy" entra como argumento (`AsOf`). La racha no es funcion de (eventos, economia) —a las 03:59 vale 12 y a las 04:01 vale 0—, asi que un fold que leyera la hora por dentro seria imposible de memoizar sin congelar el 12 para siempre.',
+            },
+            {
+              target: './src/game',
+              from: './src/mock',
+              message:
+                'src/game/** son funciones puras sobre el ledger: la capa mock las llama, no al reves.',
+            },
+            {
+              target: './src/game',
+              from: './src/content/seed',
+              message:
+                'src/game/** no conoce el catalogo: lo que necesita del contenido entra como argumento (`unitSizes`). Si lo importara, probar la racha exigiria materializar 190 lecciones.',
+            },
+            {
               target: './src/content',
               from: './src/app',
               message: 'src/content es el paquete reutilizable: no puede depender de las rutas.',
