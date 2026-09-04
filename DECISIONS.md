@@ -290,3 +290,64 @@ adivinar:
 2. **Las props exactas de los 27 componentes de `components/game/`.** Están nombrados y tienen dueño de
    selector asignado, pero tipar sus interfaces ahora, antes de que exista `LessonRuntime` compilando, produce
    firmas que se reescriben. Se congelan al inicio de la F5.
+
+---
+
+## 6. Hallazgos de la Fase 1 (construyendo, no planeando)
+
+Siete cosas que el plan afirmaba y que resultaron distintas al escribir el código. Se registran aquí porque
+son desviaciones del propio plan, no del superprompt.
+
+**H1 · La sombra sólida no es un escalón de la rampa: es una RELACIÓN con la cara.**
+`D5` decía que la sombra sólida es el tono `-800`. Al generar las rampas quedó claro que no cabe ahí: cada
+variante del botón usa una cara distinta —primary la `-600` de brand, success la `-500` de lima— así que
+como escalón fijo de la familia, `-800` acababa siendo el más oscuro para brand y un tono medio para lima,
+y encima rompía el orden de la rampa. La sombra pasó a un token propio, `--<familia>-shadow`, derivado de la
+cara. `-800` recuperó su rol real: el extremo oscuro para texto sobre tinte (≥9:1 sobre papel).
+Las siete sombras caen ahora en 1.90–1.91:1, dentro de la banda [1.9, 2.7].
+
+**H2 · `contrast()` es simétrico, y eso produjo un bug silencioso.**
+El objetivo "separación ≥1.9 respecto a la cara" lo satisface también el BLANCO, así que el solver eligió
+`#FFFFFF` como sombra de un violeta oscuro. La sombra necesita una restricción de DIRECCIÓN
+(`luminancia(sombra) < luminancia(cara)`), y hay un test que lo asevera para las cinco variantes
+precisamente para que no vuelva.
+
+**H3 · Con una marca casi negra no existe sombra posible, y eso tenía respuesta de diseño.**
+Para un cliente que elige `#111111` en `/studio/branding` no hay ningún color más oscuro con la separación
+mínima: haría falta luminancia negativa. En vez de devolver una sombra inservible en silencio,
+`solveShadow` declara `strategy: 'edge'` y el botón comunica la profundidad con un canto superior claro —el
+mismo recurso que ya usa el tema oscuro. El white-label degrada en vez de producir un canto invisible.
+
+**H4 · Un token de TEMA no puede portar el rol "tinta sobre relleno claro".**
+`--ink-900` vale `#16121F` en claro y `#F4F1FF` en oscuro. Todos los alias `--fg-on-*` lo usaban, así que en
+tema oscuro el texto sobre un menta o un ámbar claro se volvía casi blanco. Lo cazaron seis aserciones de
+contraste a la vez. Se añadieron `--ink-fixed` y `--paper-fixed`, que valen lo mismo en los dos temas, y
+todos los roles `on-fill` los usan. Es el mismo razonamiento que el brief de la mascota ya había aplicado a
+la trufa y la boca, generalizado.
+
+**H5 · Un borde de control se resuelve contra la superficie MÁS OSCURA, no la más clara.**
+`--line-400 #BCB0DE` da 2.03:1 sobre papel y no puede ser el borde de un input (WCAG 1.4.11 exige 3:1). Se
+derivó `--line-control`, pero resolverlo contra `--paper` daba 3.05:1 sobre papel y **2.84:1 sobre el
+lienzo**: un input dentro de una tarjeta pasaba y el mismo input sobre el fondo no. Resuelto contra el
+lienzo: 3.31:1 y 3.07:1.
+
+**H6 · La garantía de degradación es "todo variant declara su canal", no "un mapa total de degradados".**
+El plan prometía que añadir un variant sin degradado no compilaría. Construirlo mostró que un mapa total de
+overrides obliga a escribir a mano el degradado mecánico de las 19 entradas, y esa lista se desincroniza. La
+garantía que sí se sostiene: `VariantSpec` exige el campo `channel`, el canal decide el degradado mecánico y
+`reduced` solo existe donde el degradado mecánico no comunica lo mismo (el caso canónico es el shake). Un
+variant sin canal no compila.
+
+**H7 · El presupuesto de fuentes estaba mal formulado.**
+`subsets: ['latin']` en `next/font` controla qué rangos se PRECARGAN, no qué archivos se guardan: Next
+conserva los `@font-face` de todos los rangos que Google publica (cirílico, hebreo, vietnamita, math) para
+que un glifo inesperado siga renderizando. En disco hay 8 archivos y 176 KB; el navegador solo pide los 2
+precargados del rango latin, **67.2 KB**. El script medía artefactos de disco y reportaba un coste que nadie
+paga. Ahora mide lo precargado y reporta el resto como informativo.
+
+**Bonus · Un único sitio autorizado a afirmar una marca.**
+La regla de ESLint que prohíbe `TSAsExpression` cazó ocho casts que yo mismo había escrito. Ninguno se
+arregló debilitando la regla: seis desaparecieron con tuplas de claves declaradas y comprobación de
+completitud a nivel de tipos, y los dos irreductibles viven en `src/lib/brand.ts`, cuyo propósito entero es
+ser esa excepción. Un tipo marcado no se puede construir sin una afirmación en algún punto; la elección real
+no era "con casts o sin ellos" sino si hay **uno**, declarado y auditable, o veinte repartidos por el árbol.
