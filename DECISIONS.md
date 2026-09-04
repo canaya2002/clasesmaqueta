@@ -747,3 +747,118 @@ importa— **que la respuesta no aparezca ya escrita en la propia frase**.
 catálogo ES la app: corpus, procedimientos y frases con hueco se materializan en el cliente y viajan con la
 ruta por diseño. El motor de crecimiento a vigilar es otro —el barril de `meta`, ~5 KB comprimidos por
 dinámica— y el techo sigue puesto para que la dinámica 12 lo reviente y obligue a decidir.
+
+---
+
+## 11. Hallazgos de la Fase 5 (tres críticos antes de escribir el ledger)
+
+Sometí el ledger, el basis y el aislamiento de render a crítica adversarial ANTES de escribirlos, y
+verifiqué cada afirmación contra el código antes de actuar. El resultado más caro no fue sobre el diseño:
+**cinco bugs en código ya commiteado y en verde**.
+
+### Lo que estaba roto en las fases anteriores
+
+**H57 · `initClock` no se llamaba nunca fuera de las pruebas.** `monoEpochId()` devolvía la cadena vacía,
+que es EXACTAMENTE el centinela con el que `mock/hearts.ts` marca "este registro viene del almacenamiento".
+Coincidían, así que un registro rehidratado se creía de la misma carga de documento y el reloj monótono se
+comparaba contra el origen de otra sesión: **el anti-trampa de la Fase 4 estaba desactivado**, con su
+criterio de aceptación en verde. Ahora `initClock` rechaza semilla vacía, `monoEpochId()` exige
+inicialización, y `boot-client.ts` fija el orden.
+
+**H58 · Deslizar el ancla en múltiplos exactos de 86.400.000 ms atraviesa el cambio de horario.** Esos días
+duran 23 o 25 horas, así que el ancla quedaba corrida una hora PARA SIEMPRE y `toDayIndex(hoy)` devolvía
+118 en vez de 119: el heatmap perdía la columna de hoy. Las tres oficinas observan cambio de horario.
+
+**H59 · La historia de los 1,247 usuarios se re-tiraba entera cada medianoche.** El modelo sembraba con el
+índice RELATIVO de la columna, y el ancla se desliza una columna por noche: la misma fecha real sacaba otro
+número al día siguiente. Medí 6% de bits distintos en los últimos 30 días. El abandono lo volvía permanente
+—un estado absorbente no olvida su condición inicial—, que es por qué la divergencia no decaía. Ahora el
+abandono es función pura del día absoluto y **la historia es idéntica bit a bit al deslizar el ancla**.
+
+**H60 · La rejilla de días de la semana era ficción.** El comentario afirmaba "el día 0 de la ventana es un
+lunes por construcción del ancla". El ancla es la medianoche de hoy: es lunes uno de cada siete días. El
+hundimiento de fin de semana caía en dos días arbitrarios y se movía cada noche. El test que lo cubría
+usaba `d % 7 >= 5` —la misma suposición falsa— y pasaba.
+
+**H61 · Cinco tokens CSS fantasma.** `--fg-brand`, `--bg-brand-subtle`, `--border-subtle`, `--r-pill` y
+`--t-32` no existen. Una variable CSS inexistente no lanza ni avisa: la propiedad se descarta y el elemento
+hereda, que casi siempre se ve razonable. El número de XP de la pantalla de recompensa y el ítem activo de
+la navegación **no tenían color de marca**. `scripts/check-css-vars.mjs` entra en `verify`.
+
+### Las correcciones de diseño que cambiaron el plan
+
+**H62 · `xpWeightSum` no puede reconstruir lo que `gradeLesson` ya pagó.** Combo, reintentos y pista varían
+POR PASO, así que sumar los pesos destruye el emparejamiento: los 66 XP reales de una lección de 10 pasos
+se reconstruyen como 81 con el combo máximo (+22.7%) o 46 sin combo (−30.3%). Se guarda `xpUnitsMilli`, el
+XP con el precio factorizado fuera, y la reconstrucción es exacta bajo cualquier `xpBase`.
+
+**H63 · La frontera entre congelar y derivar, escrita una vez.** Dos críticos pidieron lo contrario sobre
+las gemas. La regla que los reconcilia: **se DERIVA lo monótono y sin cargos** (XP, nivel) —un total que
+solo sube se puede recalcular entero sin contradecir nada de lo ya visto—; **se CONGELA lo que participa en
+un SALDO** (gemas) —re-tarifar los dos lados con factores distintos produce saldos negativos por compras ya
+hechas—; y se congela también lo que hizo el USUARIO, que es un hecho histórico y no un precio.
+
+**H64 · Fuera `highWaterLevel`.** Clavar el nivel mientras el XP baja hace que el anillo calcule
+`(xp − umbral) / ventana` menor que cero: relleno negativo. Lo que no se puede revocar no es el nivel, son
+las recompensas ya entregadas, y esas se protegen congelándolas en el evento.
+
+**H65 · Ningún evento lleva `DayIndex`.** Es una coordenada sobre una rejilla que se desliza a propósito;
+congelarla significa que el evento sigue diciendo "hoy" mañana, y **una racha comparada así no se puede
+romper jamás**. Los eventos llevan `atRealMs` absoluto y la clave de día ya resuelta en la zona de la
+oficina.
+
+**H66 · El congelador de racha se empareja con días faltantes UNO A UNO.** Mi primera versión concedía los
+del tramo y restaba del total —más corta y mal—: dejaba que uno comprado el último día del hueco tapara el
+primero. Lo cazó el test.
+
+**H67 · Los umbrales de insignia solo pueden mirar contadores monótonos.** Fuera `gems` (baja al comprar),
+`currentStreak` (se reinicia) y `level` (se mueve en los dos sentidos). Una insignia que se desbloquea y
+luego desaparece es peor que no darla.
+
+**H68 · El criterio de aislamiento era aritméticamente imposible.** "10 `loseHeart()` → 11 renders" con
+`maxHearts` en 5: a partir del sexto gasto no cambia nada y el store no notifica. Reescrito contra la
+economía, más la aserción que el literal escondía: **gastar sin corazones no repinta**.
+
+**H69 · Medir renders con una envoltura que cuenta no mide nada.** Un `memo` no se repinta cuando el
+componente de dentro se actualiza por su propia suscripción: el contador se quedaba en 1 y el test afirmaba
+que los corazones no repintaban, lo contrario de la verdad. `<Profiler>` cuenta commits del subárbol, que
+sí es la unidad correcta — pero también dispara al repintar el padre, así que la invariante que no puede
+ver (la identidad estable del fold) se afirma directamente sobre `getFold`.
+
+**H70 · El LCP no es medible en este repo.** No hay navegador en `devDependencies` y vitest corre en jsdom,
+que no hace layout ni pinta. Un criterio que no se puede medir no existe. Se sustituye por lo que sí se
+comprueba y es lo que decide el número: **el candidato a LCP está en el HTML estático y aparece antes que
+cualquier esqueleto**, afirmado en `check-budgets`.
+
+**H71 · El presupuesto de arranque medía dos cosas a la vez.** El arranque en frío es la promesa (42.3 ms
+de 50, medido con la suite parada); el mejor de tres en caliente es el detector de regresiones (9.4 ms).
+Mezclarlos hacía fallar la prueba una de cada tres veces por ruido de la propia suite, que levanta 26
+entornos jsdom en paralelo. **Corrige un número que reporté antes**: los "44.98 ms de 50" eran el arranque
+en frío con calentamiento del JIT dentro, no el coste en régimen.
+
+**H72 · `pnpm dev` y `pnpm build` comparten `.next`.** El presupuesto midió el build de desarrollo: las
+tres rutas dieron 27.5 KB idénticos y **todo pasó en verde**. Segunda vez que un presupuesto aprueba por
+accidente. El script se niega a correr si encuentra `.next/static/development`.
+
+### Decisiones nuevas
+
+**D27 · Un solo nodo `current` en todo el catálogo.** Marcar la primera lección disponible de cada unidad
+desbloqueada da cinco banderas y ninguna dice a dónde ir. Entre unidades manda el GRAFO de prerrequisitos
+—son ids, así que el Studio puede hacer converger dos unidades en una tercera—; dentro de una unidad manda
+el orden.
+
+**D28 · Las insignias bloqueadas se enseñan, con su pista.** Esconderlas quita la mitad del incentivo: una
+insignia que no sabes que existe no te mueve a hacer nada. Se esconde el progreso, no la existencia.
+
+**D29 · El usuario de la demo está ELEGIDO.** Efraín Hernández Castillo, recepcionista en CDMX, ordinal
+688: recorrí los 1,247 filtrando por racha viva (21 días), historia con huecos creíbles (57 de 120) y
+catálogo sin terminar. Que sea recepcionista importa — es la persona a la que apunta el primer curso.
+
+**D30 · El crédito del test de nivel exige DOS aciertos seguidos y tapa a la mitad del curso.** Adivinar
+una de cuatro opciones es el 25%; dos seguidas, el 6%. Saltar contenido de cumplimiento por una moneda al
+aire es el error caro: el alumno no ve lo que se saltó y el reporte dirá que lo cubrió.
+
+**D31 · `/practica` no es un marcador de posición.** La cola SRS con sus cuatro modos es de la Fase 7, pero
+la mitad que los datos de hoy ya sostienen —la precisión congelada en cada intento— hace algo real. Una
+ruta enlazada que llevara a "próximamente" es la pantalla vacía que el proyecto prohíbe, y ahora un test
+cruza cada destino de la navegación contra el árbol de `src/app`.

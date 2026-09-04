@@ -1,64 +1,74 @@
-# Fase 4 — Reproductor de lección
+# Fase 5 — El Camino y los trece sistemas de gamificación
 
-`feat(app): add lesson player with hearts and combo`
+`feat(app): add learning path and gamification systems`
 
 ## Criterios de aceptación
 
 | Criterio | Estado | Cómo se comprueba |
 | --- | --- | --- |
-| Una lección de 10 pasos de punta a punta **solo con teclado** | ✅ | `lesson-keyboard.test.tsx`: el test solo emite `KeyboardEvent`. En cada uno de los 10 pasos asegura que `activeElement` no es `body` y que es el `<h1>` del paso — nunca "Continuar" |
-| `resolveHearts` con un test por rama | ✅ | 7 ramas, 7 pruebas (la especificación pedía 5; el rediseño separó `hud` de `consumes` y añadió el modo práctica) |
-| Perder la última vida anuncia en `assertive` y abre el modal de tres salidas | ✅ | Test dedicado: lee `role="alert"` y comprueba las tres salidas por su texto |
-| Cambiar el reloj del Mac **no** regala corazones | ✅ | Aritmética pura, sin fake timers: adelantar la pared 24 h con 1 h monótona da 2 corazones, no 5 |
+| LCP de `/aprende` < 2.0 s con el `<h1>` pintado desde HTML estático | ⚠️ **reformulado** | No es medible aquí: sin navegador en `devDependencies` y jsdom no pinta. Se comprueba lo que decide el número — el candidato a LCP está en el HTML estático (posición 3558) y **antes** del primer esqueleto (3804), afirmado en `check-budgets` |
+| `render-isolation.test.tsx`: perder corazones no repinta el camino | ✅ **reformulado** | El enunciado literal ("10 → 11 renders") es imposible con `maxHearts` 5. Reescrito contra la economía, más la aserción que el literal escondía: gastar sin corazones **no repinta** |
+| Las 32 insignias con condición evaluable | ✅ | Las 32 se evalúan contra un estado vacío sin lanzar; ningún umbral mira un contador que pueda bajar |
+| Mover el XP en el Studio cambia el HUD sin recargar | ✅ | `fold.test.ts`: duplicar `xpBase` duplica exactamente el total histórico |
+
+Dos criterios se reformularon, no se cumplieron a medias. Los dos enunciados originales eran defectuosos:
+uno pedía medir lo que este repo no puede medir, el otro pedía un número aritméticamente imposible.
 
 ## Verificación
 
 ```
-typecheck  ✅        lint  ✅ (0)        test  ✅ 368         shadows  ✅
-build      ✅        budgets ✅
+typecheck ✅   lint ✅ (0)   test ✅ 456   css-vars ✅ 231   shadows ✅   build ✅   budgets ✅
 ```
 
-| Ruta | First Load JS | Techo |
-| --- | --- | --- |
-| `/` | 103.9 KB | 132 KB |
-| `/kitchen-sink` | 192.3 KB | 200 KB |
-| `/leccion/[lessonId]` | **226.8 KB** | 250 KB |
+| Ruta | First Load | Techo |
+| --- | ---: | ---: |
+| `/` | 104.0 KB | 132 |
+| `/logros` | 134.3 KB | 160 |
+| `/tienda` | 138.3 KB | 160 |
+| `/ligas` | 176.7 KB | 200 |
+| `/misiones` | 181.2 KB | 200 |
+| `/perfil` | 230.3 KB | 250 |
+| `/practica` | 233.7 KB | 250 |
+| `/aprende` | 234.6 KB | 250 |
+| `/bienvenida` | 244.1 KB | 275 |
+| `/leccion/[id]` | 246.9 KB | 275 |
+
+Arranque: **42.3 ms en frío** (promesa: 50), **9.4 ms en caliente** mejor de tres (techo de regresión: 15).
+
+## El usuario con el que abre la demo
+
+> **Efraín Hernández Castillo** · Recepcionista · CDMX
+> 9,791 XP · nivel 30 · 265 gemas · 119 lecciones · 16 de 26 unidades
+> racha de 21 días · 57 días activos de 120 · 17 de 32 insignias
+
+El ordinal está elegido recorriendo los 1,247: racha viva, historia con huecos creíbles, catálogo sin
+terminar, y el puesto al que apunta el primer curso. Su ledger se deriva del **mismo bitset** que alimenta
+la analítica del Studio, así que agregado y detalle no pueden discrepar.
 
 ## Lo que se construyó
 
-- **`content/engine/hearts.ts`** — el núcleo de corazones, PURO, sin un solo `import` de reloj. La muestra
-  entra como argumento, que es lo que permite probar el criterio de "cambiar el reloj" con dos objetos
-  literales en vez de con fake timers. `reduceHearts` acumula siempre antes de consumir.
-- **`content/engine/runtime.ts`** — el puerto `LessonRuntime` y `resolveHearts` con seis reglas ordenadas
-  que devuelven además la RAZÓN, para que el Studio pueda decir por qué están apagados.
-- **`mock/hearts.ts` + `mock/hearts-ticker.ts`** — el adaptador con estado y el ticker a 1 Hz alineado al
-  borde de segundo, fuera de React, escribiendo por `textContent`.
-- **`components/game/LessonShell.tsx`** — la máquina, el ejecutor de comandos de una vez, un solo listener
-  de teclado, el sentinel de historia, las dos regiones vivas y los tres modales.
-- **`Modal`** sobre `<dialog>` nativo, **`FeedbackPanel`** con altura reservada e `inert`, **`PlayerSlot`**
-  compartido con `StepHost`, **`LessonSummary`**, **`HeartBar`**, y la ruta `(player)/leccion/[lessonId]`.
-- **`lib/a11y/focus.ts`** (foco por directiva más red de seguridad), **`lib/a11y/hotkeys.ts`**,
-  **`lib/viewport.ts`** (`--app-h` y `--kb-inset` para el teclado virtual).
+- **`game/`** — puro, sin acceso al reloj, a la capa mock ni al catálogo (prohibido por lint): `types`,
+  `fold`, `day`, `path`, `badges`, `quests`, `shop`, `leagues`, `placement`, `onboarding`, `schema`.
+- **`mock/ledger.ts`** — el basis cacheado con identidad estable y un temporizador al cruce de día.
+- **`mock/ledger-seed.ts`** — la historia inicial derivada de la actividad sembrada.
+- **Diez pantallas**: camino, misiones, tienda, ligas, logros, perfil, práctica, onboarding de cinco pasos,
+  más las dos que ya existían.
 
-## Fallos reales encontrados y corregidos
+## Los cinco bugs en código ya commiteado
 
-Ocho de ellos estaban en código ya escrito y en verde. Los detalles están en `DECISIONS.md` §9.
+La crítica adversarial se lanzó sobre el diseño y encontró el daño en lo anterior. Detalle en
+`DECISIONS.md` §11.
 
-1. Los corazones leían el reloj dos veces por transición; el empate recarga-vs-fallo era no determinista.
-2. Llenarse acumulando no re-anclaba el sello: el siguiente corazón perdido volvía en segundos.
-3. `data-hotkey` solo se emitía tras detectar teclado — **la primera tecla de cada lección no hacía nada**.
-4. `click()` sobre el `<span>` envolvente no alcanzaba al botón: los atajos numéricos estaban rotos.
-5. Cuatro variantes combinaban un muelle con tres fotogramas; `motion` lanza y el elemento no se mueve.
-6. La región `aria-live` del veredicto vivía dentro de un subárbol que se vuelve `inert`.
-7. El overlay estaba duplicado entre el reducer y el componente.
-8. El presupuesto de la ruta nueva medía 0 KB y salía verde.
+1. `initClock` no se llamaba nunca: **el anti-trampa de corazones de la Fase 4 estaba desactivado**.
+2. El deslizamiento del ancla atravesaba el cambio de horario y perdía la columna de hoy.
+3. La historia de los 1,247 usuarios **se re-tiraba entera cada medianoche** (6% de bits).
+4. El hundimiento de fin de semana no caía en fin de semana; el test que lo cubría tenía el mismo error.
+5. Cinco tokens CSS fantasma que fallaban en silencio heredando el color del padre.
 
-Los puntos 5 y 8 tienen ahora un invariante que los vuelve a cazar: una prueba que recorre el catálogo
-buscando muelles con tres fotogramas, y un `check-budgets` en el que **medir cero es un fallo duro**.
+Los cinco tienen ahora un invariante que los vuelve a cazar, incluido `check-css-vars` dentro de `verify`.
 
 ## Deuda declarada
 
-El presupuesto del reproductor (226.8 de 250 KB) lo revienta la dinámica 12: el techo está puesto para que
-obligue a decidir, no para absorberlo. Pendientes también la elección de líder entre pestañas para los
-corazones, congelar `countsForProgress` dentro del intento, y la ruta interceptada, que necesita el mapa de
-la Fase 5.
+Elección de líder entre pestañas para los corazones; `countsForProgress` congelado en el intento (ya en el
+evento del ledger, falta atarlo al reproductor); la ruta interceptada `@player/(.)leccion`; y el techo del
+reproductor, que la dinámica 12 reventará.
