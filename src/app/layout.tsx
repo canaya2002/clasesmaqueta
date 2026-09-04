@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Fredoka, Nunito } from 'next/font/google';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { MotionRoot } from '@/design/MotionRoot';
 import './globals.css';
 import '@/design/mascot.tokens.css';
@@ -72,7 +73,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
       </head>
       <body>
-        <MotionRoot>{children}</MotionRoot>
+        <NuqsAdapter>
+          <MotionRoot>{children}</MotionRoot>
+        </NuqsAdapter>
       </body>
     </html>
   );
