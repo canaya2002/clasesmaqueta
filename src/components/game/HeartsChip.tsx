@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useHearts } from '@/lib/hooks/useGameState';
 import { HeartBar } from './HeartBar';
 
@@ -14,9 +14,10 @@ import { HeartBar } from './HeartBar';
  * fuente sí es el almacenamiento, y la suscripción vive en esta envoltura.
  */
 export const HeartsChip = memo(function HeartsChip() {
-  const hearts = useHearts(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const hearts = useHearts(econ);
   if (hearts === null || !hearts.enabled) return null;
   return (
-    <HeartBar econ={DEFAULT_ECONOMY} current={hearts.current} infinite={hearts.unlimited} badge={false} />
+    <HeartBar econ={econ} current={hearts.current} infinite={hearts.unlimited} badge={false} />
   );
 });

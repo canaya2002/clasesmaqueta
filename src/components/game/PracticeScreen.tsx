@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 import { Button3D } from '@/components/ui/Button3D';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { bootClient } from '@/mock/boot-client';
 
@@ -40,7 +40,8 @@ const subscribe = (): (() => void) => () => undefined;
 const server = (): Titles | null => null;
 
 export function PracticeScreen() {
-  const fold = useFold(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const fold = useFold(econ);
   const titles = useSyncExternalStore(subscribe, readTitles, server);
 
   if (fold === null || titles === null) return <div className="skeleton" style={{ height: 300 }} />;

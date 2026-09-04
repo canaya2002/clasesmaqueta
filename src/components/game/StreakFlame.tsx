@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useEffect } from 'react';
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useBasis } from '@/lib/hooks/useGameState';
 import { StreakIcon } from '@/components/ui/icons';
 
@@ -24,7 +24,8 @@ export function temperature(days: number): StreakTemp {
  * de las reglas CSS.
  */
 export const StreakFlame = memo(function StreakFlame() {
-  const basis = useBasis(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const basis = useBasis(econ);
   const days = basis?.currentStreak ?? 0;
   const temp = temperature(days);
 

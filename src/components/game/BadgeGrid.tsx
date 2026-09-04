@@ -1,6 +1,6 @@
 'use client';
 
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { BADGES, isUnlocked, type BadgeContext } from '@/game/badges';
 import { epochDayOf } from '@/game/day';
@@ -13,7 +13,8 @@ import { BadgeIcon, LockedIcon } from '@/components/ui/icons';
  * existe no te mueve a hacer nada. Lo que se esconde es el progreso exacto, no la existencia.
  */
 export function BadgeGrid() {
-  const fold = useFold(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const fold = useFold(econ);
   if (fold === null) return <div className="skeleton" style={{ height: 400 }} />;
 
   // La ausencia más larga sale de los días activos: es el insumo de la insignia "De vuelta".

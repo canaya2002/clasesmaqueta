@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useBasis } from '@/lib/hooks/useGameState';
 import { HeartsChip } from './HeartsChip';
 import { GemIcon } from '@/components/ui/icons';
@@ -16,7 +16,8 @@ import { StreakFlame } from './StreakFlame';
  * el criterio de aceptación mide.
  */
 const GemChip = memo(function GemChip() {
-  const basis = useBasis(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const basis = useBasis(econ);
   return (
     <div className="hud-chip">
       <GemIcon size={19} strokeWidth={2.4} className="hud-chip__icon" data-tone="gem" aria-hidden="true" />

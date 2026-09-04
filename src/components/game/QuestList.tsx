@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button3D } from '@/components/ui/Button3D';
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { questProgress, questsFor, isQuestComplete } from '@/game/quests';
 import { claimQuest } from '@/mock/actions';
@@ -19,12 +19,13 @@ const QUEST_ICON = {
 import { DEMO_USER_ORDINAL } from '@/mock/boot-client';
 
 export function QuestList() {
-  const fold = useFold(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const fold = useFold(econ);
   const [error, setError] = useState<string | null>(null);
 
   if (fold === null) return <div className="skeleton" style={{ height: 240 }} />;
 
-  const quests = questsFor(DEMO_USER_ORDINAL, fold.todayEpochDay, DEFAULT_ECONOMY);
+  const quests = questsFor(DEMO_USER_ORDINAL, fold.todayEpochDay, econ);
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
@@ -75,7 +76,7 @@ export function QuestList() {
                   size="md"
                   variant={done ? 'success' : 'locked'}
                   onClick={() => {
-                    const r = claimQuest(DEFAULT_ECONOMY, q);
+                    const r = claimQuest(econ, q);
                     setError(r.ok ? null : r.reason);
                   }}
                 >

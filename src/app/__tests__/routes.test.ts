@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { DESTINATIONS } from '@/components/ui/AppNav';
+import { STUDIO_LINKS } from '@/components/studio/StudioNav';
 
 const APP = resolve(process.cwd(), 'src/app');
 
@@ -42,6 +43,11 @@ describe('el enlazado', () => {
   it('la raíz y el reproductor existen', () => {
     expect(routes.has('/')).toBe(true);
     expect([...routes].some((r) => r.startsWith('/leccion/'))).toBe(true);
+  });
+
+  it('cada destino del Studio tiene su página', () => {
+    const missing = STUDIO_LINKS.map((l) => l.href).filter((href) => !routes.has(href));
+    expect(missing).toEqual([]);
   });
 
   it('las pantallas que el HUD y el camino enlazan existen', () => {

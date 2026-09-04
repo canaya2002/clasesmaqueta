@@ -2,19 +2,21 @@
 
 import { Heatmap } from './Heatmap';
 import { Mascot } from '@/components/game/mascot/Mascot';
-import { DEFAULT_ECONOMY, levelThresholds } from '@/content/engine/economy';
+import { levelThresholds } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { DEMO_USER_ORDINAL } from '@/mock/boot-client';
 import { userAt } from '@/mock/seed';
 
 export function ProfileScreen() {
-  const fold = useFold(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const fold = useFold(econ);
   if (fold === null) return <div className="skeleton" style={{ height: 420 }} />;
 
   const b = fold.basis;
   const me = userAt(DEMO_USER_ORDINAL);
   const xp = Math.round(b.totalMilliXp / 1000);
-  const thresholds = levelThresholds(DEFAULT_ECONOMY);
+  const thresholds = levelThresholds(econ);
   const floor = thresholds[b.level - 1] ?? 0;
   const ceiling = thresholds[b.level] ?? floor + 1;
   // El anillo se acota a [0,1] a propósito: bajar el XP en el Studio puede dejar al usuario por debajo del

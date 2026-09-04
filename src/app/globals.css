@@ -136,11 +136,22 @@ h1, h2, h3, h4 {
   --btn-depth: var(--btn-depth-md);
   --btn-r: var(--r-md);
   position: relative;
-  display: inline-block;
+  /*
+   * `inline-grid` y NO `inline-block`, y la cara EN FLUJO.
+   *
+   * Antes la cara iba en `position: absolute`, o sea fuera del flujo, así que el botón no medía nada: su
+   * ancho era el `min-width` de 44 px del área táctil mientras el texto —con `white-space: nowrap` y su
+   * relleno lateral— se salía por los dos lados. Cualquier etiqueta de más de cuatro letras desbordaba.
+   *
+   * Ahora la cara está en flujo y es la que da el tamaño; la SOMBRA es la que se posiciona detrás. El
+   * espacio para la profundidad se reserva con `padding-block-end` en vez de una altura calculada, así el
+   * botón crece con su contenido en lugar de recortarlo.
+   */
+  display: inline-grid;
   border: 0;
   padding: 0;
+  padding-block-end: var(--btn-depth);
   background: none;
-  height: calc(var(--btn-h) + var(--btn-depth));
   min-width: var(--tap-min);
   cursor: pointer;
   font-family: var(--font-display);
@@ -150,20 +161,14 @@ h1, h2, h3, h4 {
 
 .btn3d__shadow {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: var(--btn-depth);
-  bottom: 0;
+  inset: var(--btn-depth) 0 0 0;
   border-radius: var(--btn-r);
   background: var(--btn-shadow-color);
 }
 
 .btn3d__face {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: var(--btn-h);
+  position: relative;
+  min-height: var(--btn-h);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,8 +209,7 @@ h1, h2, h3, h4 {
  * usuario nunca se entera de qué le falta. Aquí sigue enfocable y al pulsarlo hace el clunk. */
 .btn3d[data-variant='locked']  { --btn-face: var(--border-default);   --btn-label: var(--fg-subtle);     --btn-shadow-color: var(--line-control); --btn-depth: 2px; cursor: not-allowed; }
 
-.btn3d[data-full='true'] { display: block; width: 100%; }
-.btn3d[data-full='true'] .btn3d__face { padding-inline: 0; }
+.btn3d[data-full='true'] { display: grid; width: 100%; }
 
 /* ==================================================== veredicto: nunca solo color
  *
@@ -882,3 +886,122 @@ dialog::backdrop {
 .league-row__zone { display: grid; place-items: center; width: 16px; }
 .league-row[data-zone='up'] .league-row__zone { color: var(--fg-success); }
 .league-row[data-zone='down'] .league-row__zone { color: var(--fg-danger); }
+
+/* ====================================================================== SENDA Studio
+   Denso donde la App es generosa: menos aire, más filas por pantalla, cero animación ambiente. */
+.studio { min-height: 100dvh; background: var(--bg-canvas); }
+.studio__bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 20px;
+  height: 56px;
+  background: var(--bg-paper);
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.studio__brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--t-16);
+  color: var(--fg-default);
+  text-decoration: none;
+}
+.studio__brand span { color: var(--fg-primary); }
+.studio__nav { display: flex; gap: 4px; flex: 1; }
+.studio__nav a {
+  padding: 7px 14px;
+  border-radius: var(--r-sm);
+  color: var(--fg-muted);
+  font-size: var(--t-14);
+  font-weight: 700;
+  text-decoration: none;
+}
+.studio__nav a[aria-current='page'] { background: var(--bg-primary-subtle); color: var(--fg-primary); }
+.studio__exit { color: var(--fg-muted); font-size: var(--t-14); text-decoration: none; }
+.studio__main { max-width: 1180px; margin-inline: auto; padding: 24px 20px 48px; }
+.studio h1 { margin: 0 0 4px; font-family: var(--font-display); font-size: var(--t-28); }
+.studio__sub { margin: 0 0 20px; color: var(--fg-muted); font-size: var(--t-14); }
+
+/* ------------------------------------------------------------------ panel del Studio */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 12px; }
+.kpi { padding: 14px 16px; border-radius: var(--r-md); background: var(--bg-paper); box-shadow: var(--e1); }
+.kpi__label { margin: 0; color: var(--fg-muted); font-size: var(--t-12); font-weight: 700; }
+.kpi__value { margin: 2px 0 0; font-family: var(--font-display); font-size: var(--t-28); font-variant-numeric: tabular-nums; }
+.kpi__foot { margin: 0; color: var(--fg-subtle); font-size: var(--t-12); }
+.spark { display: flex; align-items: flex-end; gap: 1px; height: 92px; }
+.spark span { flex: 1; border-radius: 2px 2px 0 0; background: var(--bg-primary); opacity: 0.85; }
+
+/* ------------------------------------------------------------- tabla de personas */
+.users-bar { display: flex; gap: 12px; align-items: center; }
+.users-search {
+  flex: 1;
+  min-height: var(--tap-min);
+  padding: 0 14px;
+  border: 2px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: var(--bg-paper);
+  color: var(--fg-default);
+  font: inherit;
+  font-size: var(--t-14);
+}
+.users-count { color: var(--fg-muted); font-size: var(--t-14); font-variant-numeric: tabular-nums; }
+.users-facets { display: flex; flex-wrap: wrap; gap: 6px; }
+.users-facets button {
+  padding: 6px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-full);
+  background: var(--bg-paper);
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: var(--t-12);
+  font-weight: 700;
+  cursor: pointer;
+}
+.users-facets button[data-on='true'] { background: var(--bg-primary); border-color: var(--bg-primary); color: var(--fg-on-primary); }
+.users-facets button span { opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+.users-table { border-radius: var(--r-md); background: var(--bg-paper); box-shadow: var(--e1); overflow: hidden; }
+.users-scroll { height: 60vh; overflow-y: auto; contain: strict; }
+.users-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.3fr) minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  font-size: var(--t-14);
+  border-bottom: 1px solid var(--border-default);
+}
+.users-row--head {
+  height: 38px;
+  color: var(--fg-muted);
+  font-size: var(--t-12);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: var(--tr-12);
+  background: var(--bg-canvas);
+}
+.users-row strong { display: block; font-weight: 600; }
+.users-row em { display: block; color: var(--fg-subtle); font-style: normal; font-size: var(--t-12); }
+/* Una persona dada de baja se distingue por el TEXTO tachado además del tono: el tono solo no sobrevive
+   a una impresión en blanco y negro, y esta tabla se imprime. */
+.users-row[data-inactive='true'] strong { text-decoration: line-through; color: var(--fg-muted); }
+.users-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------ formulario de economía */
+.econ-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.econ-field { display: grid; gap: 4px; }
+.econ-field__label { font-size: var(--t-14); font-weight: 700; }
+.econ-field input {
+  min-height: var(--tap-min);
+  padding: 0 12px;
+  border: 2px solid var(--border-default);
+  border-radius: var(--r-sm);
+  background: var(--bg-paper);
+  color: var(--fg-default);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.econ-field__help { color: var(--fg-muted); font-size: var(--t-12); line-height: var(--lh-12); }

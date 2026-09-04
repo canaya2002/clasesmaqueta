@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PathSection, type PathUnit } from './PathSection';
 import { pathStates, type PathUnitInput } from '@/game/path';
 import { useFold } from '@/lib/hooks/useGameState';
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { bootClient } from '@/mock/boot-client';
 import type { Course } from '@/content/engine/schema';
 
@@ -77,8 +77,9 @@ const serverCatalog = (): Loaded | null => null;
  * que es donde vive el criterio de aislamiento.
  */
 export function PathScreen() {
+  const econ = useEconomy();
   const loaded = useSyncExternalStore(subscribeCatalog, readCatalog, serverCatalog);
-  const fold = useFold(DEFAULT_ECONOMY);
+  const fold = useFold(econ);
   const scrolled = useRef(false);
 
   const path = useMemo(() => {

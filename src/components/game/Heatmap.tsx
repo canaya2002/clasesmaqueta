@@ -1,6 +1,6 @@
 'use client';
 
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { HISTORY_DAYS } from '@/lib/clock';
 import { dayKeyFromEpochDay } from '@/game/day';
@@ -23,7 +23,8 @@ function level(xp: number): 0 | 1 | 2 | 3 | 4 {
 }
 
 export function Heatmap() {
-  const fold = useFold(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const fold = useFold(econ);
   if (fold === null) return <div className="skeleton" style={{ height: 120 }} />;
 
   const cells: { key: string; xp: number }[] = [];

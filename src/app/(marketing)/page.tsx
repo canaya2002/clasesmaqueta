@@ -26,6 +26,12 @@ const DOORS = [
     cta: 'Ir a su camino',
   },
   {
+    href: '/studio/dashboard',
+    title: 'Entrar al Studio',
+    body: 'El otro lado: 1,247 personas, la analítica derivada del mismo índice, y la economía editable en vivo.',
+    cta: 'Abrir el Studio',
+  },
+  {
     href: '/kitchen-sink',
     title: 'Ver las piezas',
     body: 'Las siete dinámicas jugables, los nueve estados de la mascota y las micro-interacciones.',
@@ -42,8 +48,8 @@ export default function MarketingPage(): React.ReactElement {
       <MascotSolid className="landing__mascot" fill="var(--bg-primary)" />
       <h1 className="landing__title">SENDA</h1>
       <p className="landing__sub">
-        Capacitación interna que la gente quiere abrir. Tres cursos sobre riesgo operativo real, 190
-        lecciones y 1,247 personas en la plantilla de la demo.
+        Un repo, dos productos. La App que el alumno abre y el Studio con el que se administra: tres
+        cursos sobre riesgo operativo real, 190 lecciones y 1,247 personas.
       </p>
 
       <ul className="landing__doors">

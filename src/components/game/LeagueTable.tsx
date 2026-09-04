@@ -1,6 +1,6 @@
 'use client';
 
-import { DEFAULT_ECONOMY } from '@/content/engine/economy';
+import { useEconomy } from '@/lib/hooks/useEconomy';
 import { useFold } from '@/lib/hooks/useGameState';
 import { divisionName, roomFor, settleWeek } from '@/game/leagues';
 import { DEMO_USER_ORDINAL } from '@/mock/boot-client';
@@ -16,14 +16,15 @@ function weeklyXp(xpByDay: ReadonlyMap<string, number>, todayEpochDay: number, k
 }
 
 export function LeagueTable() {
-  const fold = useFold(DEFAULT_ECONOMY);
+  const econ = useEconomy();
+  const fold = useFold(econ);
   if (fold === null) return <div className="skeleton" style={{ height: 320 }} />;
 
   const mine = weeklyXp(fold.xpByDayKey, fold.todayEpochDay, fold.activeDayKeys);
   const division = Math.min(4, Math.floor(fold.basis.level / 8));
   const week = Math.floor(fold.todayEpochDay / 7);
-  const room = roomFor({ ordinal: DEMO_USER_ORDINAL, weekOrdinal: week, division, myWeeklyXp: mine, econ: DEFAULT_ECONOMY });
-  const outcome = settleWeek(room, division, DEFAULT_ECONOMY);
+  const room = roomFor({ ordinal: DEMO_USER_ORDINAL, weekOrdinal: week, division, myWeeklyXp: mine, econ: econ });
+  const outcome = settleWeek(room, division, econ);
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
@@ -36,8 +37,8 @@ export function LeagueTable() {
           {divisionName(division)}
         </p>
         <p style={{ margin: '6px 0 0', color: 'var(--fg-muted)', fontSize: 'var(--t-14)' }}>
-          Van {String(DEFAULT_ECONOMY.leaguePromote)} a la siguiente división. Bajan los últimos{' '}
-          {String(DEFAULT_ECONOMY.leagueDemote)}.
+          Van {String(econ.leaguePromote)} a la siguiente división. Bajan los últimos{' '}
+          {String(econ.leagueDemote)}.
         </p>
       </div>
 
@@ -45,9 +46,9 @@ export function LeagueTable() {
         {room.map((m, i) => {
           const rank = i + 1;
           const zone =
-            rank <= DEFAULT_ECONOMY.leaguePromote
+            rank <= econ.leaguePromote
               ? 'up'
-              : rank > room.length - DEFAULT_ECONOMY.leagueDemote
+              : rank > room.length - econ.leagueDemote
                 ? 'down'
                 : 'flat';
           return (
