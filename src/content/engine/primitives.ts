@@ -132,7 +132,19 @@ export type IdPrefix = (typeof ID_PREFIX)[keyof typeof ID_PREFIX];
 const ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz';
 const ID_LENGTH = 8;
 
-const idPattern = new RegExp(`^[a-z]{3}_[${ALPHABET}]{${ID_LENGTH}}$`);
+/**
+ * Un identificador es o bien ACUÑADO (8 caracteres base32) o bien SEMÁNTICO (`skl_recepcion`,
+ * `unt_llamada-entrante`).
+ *
+ * Los semánticos existen porque los ids aparecen EN PANTALLA: en el diff de versiones, en los mensajes de
+ * validación y en el reporte de importación. `unt_7k3pq9wy` se ve profesional y arruina justo las dos
+ * pantallas que más venden el producto; `unt_llamada-entrante` se lee.
+ *
+ * Los acuñados se reservan para lo que genera la semilla o el editor, donde no hay nombre que dar.
+ */
+const mintedPattern = new RegExp(`^[a-z]{3}_[${ALPHABET}]{${ID_LENGTH}}$`);
+const semanticPattern = /^[a-z]{3}_[a-z0-9][a-z0-9-]{2,39}$/;
+const idPattern = new RegExp(`(${mintedPattern.source})|(${semanticPattern.source})`);
 
 /**
  * La ÚNICA fábrica de identificadores.

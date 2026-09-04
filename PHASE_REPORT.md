@@ -1,4 +1,4 @@
-# PHASE_REPORT — Fase 1
+# PHASE_REPORT — Fase 2
 
 Generado por `pnpm phase-report` el 2026-09-04. Los números salen de la medición, no de una estimación.
 
@@ -15,10 +15,10 @@ Generado por `pnpm phase-report` el 2026-09-04. Los números salen de la medici�
 ## Pruebas
 
 ```
-Test Files  3 passed (3)
-      Tests  122 passed (122)
-   Start at  09:51:02
-   Duration  614ms (environment 87%, transform 8%, tests 4%, import 1%, setup 1%, worker 1%)
+Test Files  8 passed (8)
+      Tests  223 passed (223)
+   Start at  11:15:13
+   Duration  896ms (environment 76%, transform 13%, tests 6%, import 5%)
 ```
 
 ## Presupuestos medidos
@@ -45,3 +45,25 @@ script inline: 0.50 KB / 1.00 KB  OK
 ```
 check-solid-shadows: sin hallazgos.
 ```
+
+## Arranque del mundo
+
+```json
+{ "totalMs": 44.98, "presupuesto": 50,
+  "actividad": 5.27, "usuarios": 3.84, "busqueda": 4.05, "contenido": 31.83 }
+```
+
+El contenido consume 32 de los 45 ms y es la parte que crecerá con las 13 dinámicas restantes. Cuando se
+acerque al presupuesto, la palanca es rebanar el arranque —materializar solo el curso activo, que son ~700
+pasos en vez de 2,090—, no paralelizarlo: lo caro no cruza barato la frontera de un worker.
+
+## El mundo, medido
+
+| | |
+|---|---|
+| Usuarios | 1,247 · cohortes que suman exactamente eso, una de 300 |
+| Ejercicios | 2,090 con 728 enunciados distintos (182 hechos x 4 plantillas) |
+| Racha máxima vigente | 64 días · 108 personas con 7+ · 22 con 30+ |
+| DAU / WAU / MAU | 304 / 738 / 1,164 |
+| Índice de actividad | 37.8 KB para las dos orientaciones del bitset |
+| Hechos jurídicos | 20 de 182, etiquetados como contenido de ejemplo |
