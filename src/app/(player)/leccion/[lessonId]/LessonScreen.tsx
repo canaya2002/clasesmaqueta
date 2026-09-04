@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { LessonShell } from '@/components/game/LessonShell';
 // El barril de metadatos de las dinamicas. Va AQUI y no en el layout raiz: cada `meta` pesa unos 5 KB
@@ -14,6 +14,9 @@ import { DEFAULT_ECONOMY } from '@/content/engine/economy';
 import type { Lesson } from '@/content/engine/schema';
 import type { LessonResult } from '@/content/engine/grade';
 
+/** Sin fuente externa: solo distingue servidor de cliente sin caer en un `setState` dentro de un efecto. */
+const noopSubscribe = (): (() => void) => () => undefined;
+
 type Load =
   | { readonly kind: 'loading' }
   | { readonly kind: 'ready'; readonly lesson: Lesson }
@@ -24,9 +27,20 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const econ = DEFAULT_ECONOMY;
 
-  // El runtime se crea UNA vez por montaje: recrearlo en cada render volvería a tomar el snapshot de
-  // corazones y el efecto de comandos del shell se re-dispararía con cada tick del contador.
-  const runtime = useMemo(() => createSessionRuntime({ econ }), [econ]);
+  /*
+   * El runtime se crea SOLO en el cliente, y esto no es una precaución teórica.
+   *
+   * Un componente 'use client' TAMBIÉN se renderiza en el servidor para el HTML inicial, y esta ruta es
+   * dinámica. `createSessionRuntime` lee los corazones, que leen el reloj, que exige `initClock()` — algo
+   * que solo ocurre en el arranque del cliente. En producción eso era un 500 en la ruta más importante del
+   * producto.
+   *
+   * Lo encontró la guarda que añadí al reloj en la fase 5. Antes de ella, el mismo código devolvía la
+   * cadena vacía y seguía adelante con un reloj sin anclar: fallaba igual, pero en silencio y con números
+   * equivocados. Un error que rompe el build es más barato que uno que no.
+   */
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const runtime = useMemo(() => (hydrated ? createSessionRuntime({ econ }) : null), [hydrated, econ]);
 
   const onFinish = useCallback(
     (result: LessonResult): void => {
@@ -42,10 +56,10 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
         result,
         // El modo práctica sin corazones NO cuenta para progreso, y la decisión viaja congelada en el
         // evento: se activa a mitad de lección, así que solo el evento sabe bajo qué reglas se jugó.
-        countsForProgress: runtime.awardsProgress,
+        countsForProgress: runtime?.awardsProgress ?? false,
       });
     },
-    [load, econ, runtime.awardsProgress],
+    [load, econ, runtime],
   );
 
   useEffect(() => {
@@ -59,7 +73,7 @@ export function LessonScreen({ lessonId }: { readonly lessonId: string }) {
     };
   }, [lessonId]);
 
-  if (load.kind === 'loading') {
+  if (load.kind === 'loading' || runtime === null) {
     return (
       <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', background: 'var(--bg-canvas)' }}>
         <div className="skeleton" style={{ width: 'min(88vw, 560px)', height: 240 }} />
