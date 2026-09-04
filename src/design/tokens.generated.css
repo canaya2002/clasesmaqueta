@@ -1,0 +1,158 @@
+/* ============================================================================
+ * GENERADO POR `pnpm tokens` — NO EDITAR A MANO.
+ * Fuente: src/design/palette.config.ts + src/design/ramp.ts
+ *
+ * Cada valor lleva el contraste MEDIDO sobre el hex resultante, no el prometido.
+ * El número del escalón es un contrato de contraste, no una etiqueta de intensidad:
+ *   -300: tinte de fondo — sostiene texto tinta a >=14:1
+ *   -400: texto sobre papel oscuro — >=7:1, con margen para OLED
+ *   -500: color de firma, relleno grande — SIN contrato de contraste
+ *   -600: relleno que acepta texto blanco — >=4.5:1
+ *   -700: texto sobre papel claro — >=5.5:1
+ *   -800: extremo oscuro — texto sobre tinte y trazo de énfasis, >=9:1 sobre papel
+ * ========================================================================== */
+
+:root {
+
+  /* --- brand · tono 284.7° · violeta eléctrico — CTA primario, camino activo. El único cromático que puede ser texto. */
+  --brand-300: #DDDEFF; /* 14.00:1 vs ink-900 encima */
+  --brand-400: #9D96FF; /* 7.02:1 vs papel oscuro */
+  --brand-500: #8371FF; /* 3.64:1 vs papel (informativo) */
+  --brand-600: #6C4CF1; /* 5.33:1 vs papel / texto blanco · FIJADO */
+  --brand-700: #5334D8; /* 7.37:1 vs papel · FIJADO */
+  --brand-800: #4B2CB4; /* 9.06:1 vs papel */
+  --brand-shadow: #4A01C1; /* sombra sólida de la cara -600 · separación 1.91:1 → OK */
+
+  /* --- grape · tono 322.2° · sección — reemplaza a lime en el enum de paleta de sección. */
+  --grape-300: #FAD5FF; /* 14.05:1 vs ink-900 encima */
+  --grape-400: #D981E6; /* 7.01:1 vs papel oscuro */
+  --grape-500: #CC5CDD; /* 3.42:1 vs papel (informativo) */
+  --grape-600: #B546C6; /* 4.51:1 vs papel / texto blanco */
+  --grape-700: #A33AB3; /* 5.51:1 vs papel */
+  --grape-800: #791B87; /* 9.05:1 vs papel */
+  --grape-shadow: #9C1FAE; /* sombra sólida de la cara -500 · separación 1.91:1 → OK */
+
+  /* --- lime · tono 126.4° · acento, XP, destellos. Cara del botón de éxito, con etiqueta TINTA (13.61:1). */
+  --lime-300: #CAEC99; /* 14.00:1 vs ink-900 encima */
+  --lime-400: #85B027; /* 7.01:1 vs papel oscuro */
+  --lime-500: #B6F03C; /* 1.35:1 vs papel (informativo) · FIJADO */
+  --lime-600: #5E8100; /* 4.55:1 vs papel / texto blanco */
+  --lime-700: #537201; /* 5.56:1 vs papel */
+  --lime-800: #395000; /* 9.05:1 vs papel */
+  /* NOTA de orden: -400 → -500 no decrecen en luminosidad. El hex de firma de la especificación es más claro que su vecino; el número del escalón es un contrato de contraste, no una escala de intensidad. Ningún componente escribe un escalón numerado. */
+  --lime-shadow: #82B000; /* sombra sólida de la cara -500 · separación 1.90:1 → OK */
+
+  /* --- mint · tono 157.3° · correcto. Como TEXTO de estado usa el -700; el relleno no admite texto blanco. */
+  --mint-300: #AAF0C5; /* 14.01:1 vs ink-900 encima */
+  --mint-400: #47B67C; /* 7.02:1 vs papel oscuro */
+  --mint-500: #3DD68C; /* 1.88:1 vs papel (informativo) · FIJADO */
+  --mint-600: #018853; /* 4.52:1 vs papel / texto blanco */
+  --mint-700: #007848; /* 5.56:1 vs papel */
+  --mint-800: #015431; /* 9.08:1 vs papel */
+  /* NOTA de orden: -400 → -500 no decrecen en luminosidad. El hex de firma de la especificación es más claro que su vecino; el número del escalón es un contrato de contraste, no una escala de intensidad. Ningún componente escribe un escalón numerado. */
+  --mint-shadow: #019B5F; /* sombra sólida de la cara -500 · separación 1.91:1 → OK */
+
+  /* --- coral · tono 15.0° · incorrecto, corazones. */
+  --coral-300: #FFD7D9; /* 14.01:1 vs ink-900 encima */
+  --coral-400: #FF7787; /* 7.02:1 vs papel oscuro */
+  --coral-500: #FF5470; /* 3.11:1 vs papel (informativo) · FIJADO */
+  --coral-600: #DD3155; /* 4.52:1 vs papel / texto blanco */
+  --coral-700: #C7254A; /* 5.54:1 vs papel */
+  --coral-800: #95012F; /* 9.04:1 vs papel */
+  --coral-shadow: #C80142; /* sombra sólida de la cara -500 · separación 1.91:1 → OK */
+
+  /* --- amber · tono 75.0° · racha, cofres, oro. */
+  --amber-300: #FFDBAB; /* 14.01:1 vs ink-900 encima */
+  --amber-400: #D39734; /* 7.02:1 vs papel oscuro */
+  --amber-500: #FFB020; /* 1.83:1 vs papel (informativo) · FIJADO */
+  --amber-600: #A16C01; /* 4.51:1 vs papel / texto blanco */
+  --amber-700: #8F5F00; /* 5.52:1 vs papel */
+  --amber-800: #654200; /* 9.00:1 vs papel */
+  /* NOTA de orden: -400 → -500 no decrecen en luminosidad. El hex de firma de la especificación es más claro que su vecino; el número del escalón es un contrato de contraste, no una escala de intensidad. Ningún componente escribe un escalón numerado. */
+  --amber-shadow: #BA7D01; /* sombra sólida de la cara -500 · separación 1.91:1 → OK */
+
+  /* --- sky · tono 232.7° · gemas, audio. */
+  --sky-300: #BBE7FF; /* 14.02:1 vs ink-900 encima */
+  --sky-400: #4DACDA; /* 7.01:1 vs papel oscuro */
+  --sky-500: #38BDF8; /* 2.14:1 vs papel (informativo) · FIJADO */
+  --sky-600: #007FAD; /* 4.53:1 vs papel / texto blanco */
+  --sky-700: #00709A; /* 5.55:1 vs papel */
+  --sky-800: #004E6C; /* 9.11:1 vs papel */
+  /* NOTA de orden: -400 → -500 no decrecen en luminosidad. El hex de firma de la especificación es más claro que su vecino; el número del escalón es un contrato de contraste, no una escala de intensidad. Ningún componente escribe un escalón numerado. */
+  --sky-shadow: #0087B8; /* sombra sólida de la cara -500 · separación 1.90:1 → OK */
+
+  /* --- tinta que NO voltea con el tema ------------------------------------------------
+   * `--ink-900` es un token de TEMA: en oscuro vale #F4F1FF. Usarlo como "tinta sobre relleno
+   * claro" produce texto casi blanco sobre un menta claro en cuanto se cambia de tema. Todo rol
+   * del tipo "on-fill" usa estos dos, que valen lo mismo en los dos temas. */
+  --ink-fixed: #16121F;
+  --paper-fixed: #FFFFFF;
+
+  /* --- superficies y tinta, tema claro --- */
+  --paper: #FFFFFF;
+  --canvas: #F7F5FF;
+  --ink-900: #16121F; /* 18.41:1 vs papel */
+  --ink-700: #3A3350; /* 11.87:1 vs papel */
+  --ink-500: #6B6480; /* 5.59:1 vs papel */
+  --line-200: #E6E1F5;
+  --line-400: #BCB0DE; /* 2.02:1 vs papel — decorativo, NO borde de control */
+  --line-control: #9189A7; /* 3.31:1 vs papel · 3.07:1 vs lienzo — el único borde permitido en controles */
+}
+
+/* Tema oscuro. El @media envuelve al selector, JAMÁS al revés: un selector con @media embebido
+   es sintaxis inválida y el navegador descarta la regla completa. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+      --paper: #1A1428;
+      --canvas: #100C1B;
+      --paper-raised: #2A2140; /* 1.27:1 vs lienzo */
+      --ink-900: #F4F1FF; /* 16.07:1 vs papel oscuro */
+      --ink-700: #CFC9E6; /* 11.20:1 */
+      --ink-500: #9FA0BF; /* 7.03:1 — el #6B6480 claro daba 3.20:1 y FALLABA */
+      --line-200: #2E2542;
+      --line-300: #3F3358;
+      --line-strong: #6E6090; /* 3.18:1 vs papel · 3.43:1 vs lienzo — único borde permitido en controles */
+  
+      /* sombras sólidas: en oscuro la separación sube a 2.6–3.4, o leerían como halo */
+      --brand-shadow: #33008B; /* 2.60:1 en oscuro */
+      --grape-shadow: #810192; /* 2.61:1 en oscuro */
+      --lime-shadow: #527100; /* 2.63:1 en oscuro */
+      --mint-shadow: #017748; /* 2.61:1 en oscuro */
+      --coral-shadow: #A20034; /* 2.61:1 en oscuro */
+      --amber-shadow: #8D5F01; /* 2.60:1 en oscuro */
+      --sky-shadow: #016F98; /* 2.63:1 en oscuro */
+  
+      /* rellenos extensos que deslumbran en OLED (umbral medido, no elegido) */
+      --lime-500: #8EC101; /* relleno extenso en oscuro: 14.23:1 deslumbraba → 8.97:1 */
+      --mint-500: #29C980; /* relleno extenso en oscuro: 10.27:1 deslumbraba → 8.95:1 */
+      --amber-500: #EEA201; /* relleno extenso en oscuro: 10.53:1 deslumbraba → 8.99:1 */
+  }
+}
+
+/* Tercer bloque: el toggle explícito gana en ambos sentidos. */
+:root[data-theme="dark"] {
+    --paper: #1A1428;
+    --canvas: #100C1B;
+    --paper-raised: #2A2140; /* 1.27:1 vs lienzo */
+    --ink-900: #F4F1FF; /* 16.07:1 vs papel oscuro */
+    --ink-700: #CFC9E6; /* 11.20:1 */
+    --ink-500: #9FA0BF; /* 7.03:1 — el #6B6480 claro daba 3.20:1 y FALLABA */
+    --line-200: #2E2542;
+    --line-300: #3F3358;
+    --line-strong: #6E6090; /* 3.18:1 vs papel · 3.43:1 vs lienzo — único borde permitido en controles */
+
+    /* sombras sólidas: en oscuro la separación sube a 2.6–3.4, o leerían como halo */
+    --brand-shadow: #33008B; /* 2.60:1 en oscuro */
+    --grape-shadow: #810192; /* 2.61:1 en oscuro */
+    --lime-shadow: #527100; /* 2.63:1 en oscuro */
+    --mint-shadow: #017748; /* 2.61:1 en oscuro */
+    --coral-shadow: #A20034; /* 2.61:1 en oscuro */
+    --amber-shadow: #8D5F01; /* 2.60:1 en oscuro */
+    --sky-shadow: #016F98; /* 2.63:1 en oscuro */
+
+    /* rellenos extensos que deslumbran en OLED (umbral medido, no elegido) */
+    --lime-500: #8EC101; /* relleno extenso en oscuro: 14.23:1 deslumbraba → 8.97:1 */
+    --mint-500: #29C980; /* relleno extenso en oscuro: 10.27:1 deslumbraba → 8.95:1 */
+    --amber-500: #EEA201; /* relleno extenso en oscuro: 10.53:1 deslumbraba → 8.99:1 */
+}
+

@@ -1,0 +1,116 @@
+/**
+ * SENDA — fachada de efectos imperativos.
+ *
+ * Confetti, partículas, shake y sonido no son variants, así que no los cubre el intercambio de catálogo de
+ * `motion.ts`. Sin este archivo, el confetti se queda sin degradar: casi nadie lo degrada, porque no vive
+ * en el sistema de animación sino en un `import` suelto dentro de la pantalla de resumen.
+ *
+ * ESLint prohíbe importar `canvas-confetti` fuera de aquí.
+ */
+
+import { audioBus } from '@/lib/audio/synth';
+import { COMBO_BLAZE_AT, COMBO_CEILING, COMBO_SCALE, type SfxId } from './sound';
+
+let reduced = false;
+
+/** Lo llama `<MotionRoot>`. Es el único punto del sistema que lee la preferencia del usuario. */
+export function setReducedMotion(value: boolean): void {
+  reduced = value;
+}
+
+export function isReducedMotion(): boolean {
+  return reduced;
+}
+
+export interface Origin {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Confetti solo en takeovers, donde nada más se mueve.
+ *
+ * La regla numérica: si hay 2 o más animaciones de UI activas al mismo tiempo, se usan partículas DOM
+ * (`burst`), no confetti. Tener dos implementaciones con una regla objetiva es la decisión; el default es
+ * usar canvas-confetti para todo porque es una línea.
+ */
+export async function confetti(origin: Origin, wave: 1 | 2 = 1): Promise<void> {
+  if (reduced) return;
+  const mod = await import('canvas-confetti');
+  const fire = mod.default;
+  const common = {
+    origin,
+    disableForReducedMotion: true,
+    colors: ['#B6F03C', '#6C4CF1', '#FFB020', '#3DD68C'],
+    scalar: 0.9,
+  };
+  void fire({ ...common, particleCount: 60, spread: 62, startVelocity: 42 });
+  if (wave === 2) {
+    window.setTimeout(() => {
+      void fire({ ...common, particleCount: 30, spread: 90, startVelocity: 30 });
+    }, 260);
+  }
+}
+
+const BURST_COUNT = 14;
+
+/**
+ * Partículas en DOM: 14 spans de 6px de un pool premontado, `will-change` encendido 700ms y apagado.
+ * El presupuesto es auditable en un PR, que es el punto de que sea un número y no "unas cuantas".
+ */
+export function burst(el: Element): void {
+  if (reduced) return;
+  const host = document.createElement('div');
+  host.setAttribute('data-fx', 'burst');
+  host.style.cssText =
+    'position:fixed;inset:0;pointer-events:none;z-index:60;contain:layout paint;will-change:transform';
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  for (let i = 0; i < BURST_COUNT; i += 1) {
+    const p = document.createElement('span');
+    const angle = (i / BURST_COUNT) * Math.PI * 2;
+    const dist = 46 + (i % 3) * 14;
+    p.style.cssText =
+      `position:absolute;left:${cx}px;top:${cy}px;width:6px;height:6px;border-radius:999px;` +
+      `background:var(--bg-xp-solid);transform:translate3d(-50%,-50%,0) scale(1);opacity:1;` +
+      `transition:transform 520ms cubic-bezier(.2,.7,.3,1),opacity 520ms linear`;
+    host.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.transform =
+        `translate3d(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px), 0) scale(0.3)`;
+      p.style.opacity = '0';
+    });
+  }
+  document.body.appendChild(host);
+  window.setTimeout(() => host.remove(), 700);
+}
+
+/** Shake imperativo. Con movimiento reducido se convierte en un destello de borde, no en un fade. */
+export function shake(el: HTMLElement): void {
+  el.setAttribute('data-shake', reduced ? 'flash' : 'x');
+  window.setTimeout(() => el.removeAttribute('data-shake'), reduced ? 240 : 320);
+}
+
+/**
+ * Sonido. NO consulta el modo reducido: sonido y movimiento son ejes distintos.
+ * Es más: en las cinemáticas el audio COMPENSA la pérdida visual, y por eso el ascenso de tono del combo
+ * se conserva íntegro con movimiento reducido.
+ */
+export function play(id: SfxId, opts: { readonly pitch?: number; readonly gain?: number } = {}): void {
+  audioBus.play(id, opts);
+}
+
+/** El combo recorre la pentatónica; a partir del techo solo sube la ganancia (modo "en llamas"). */
+export function playCombo(comboRun: number): void {
+  const index = Math.min(Math.max(comboRun, 1), COMBO_CEILING) - 1;
+  const base = COMBO_SCALE[0] ?? 587.33;
+  const freq = COMBO_SCALE[index] ?? base;
+  const blaze = comboRun >= COMBO_BLAZE_AT;
+  audioBus.play('combo', { pitch: freq / base, gain: blaze ? 1.35 : 1 });
+}
+
+export function duck(amount: number, durationMs: number): void {
+  audioBus.duck(amount, durationMs);
+}

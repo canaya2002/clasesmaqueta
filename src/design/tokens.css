@@ -1,0 +1,264 @@
+/* ============================================================================
+ * SENDA — capa semántica.
+ *
+ * Los primitivos numerados viven en `tokens.generated.css`, en un `:root` PELADO, y NO entran a `@theme`:
+ * por eso `bg-mint-400` no existe como clase de Tailwind y `bg-success-solid` sí. Un componente que quiera
+ * el verde crudo tiene que editar este archivo, y eso sale en el diff.
+ *
+ * El white-label es imposible si un solo componente escribió el violeta a mano, así que la clase no debe
+ * existir. La restricción es mecánica, no una convención de revisión.
+ *
+ * Todo par fg/bg de este archivo está aseverado en `src/design/contrast.test.ts`, que rompe el build.
+ * ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------- superficies */
+  --bg-canvas: var(--canvas);
+  --bg-paper: var(--paper);
+  --bg-raised: var(--paper);
+
+  /* ---------------------------------------------------------------- texto */
+  --fg-default: var(--ink-900);
+  --fg-subtle: var(--ink-700);
+  --fg-muted: var(--ink-500);
+
+  /* --------------------------------------------------------------- bordes */
+  --border-default: var(--line-200);
+  --border-strong: var(--line-control);
+
+  /* -------------------------------------------------------------- primario */
+  --bg-primary: var(--brand-600);
+  /* Blanco en AMBOS temas: la cara del CTA es el mismo violeta en los dos, y solo el blanco lo sostiene
+   * (5.33:1 contra 3.46:1 de la tinta). Usar `--paper` aquí lo volvería casi negro en oscuro. */
+  --fg-on-primary: var(--paper-fixed);
+  --shadow-primary: var(--brand-shadow);
+  --fg-primary: var(--brand-700);
+  --bg-primary-subtle: var(--brand-300);
+
+  /* --- éxito. El menta es color de TEXTO; la cara del botón de éxito es lima con tinta. */
+  --bg-success-subtle: var(--mint-300);
+  --fg-success: var(--mint-700);
+  --border-success: var(--mint-600);
+  --bg-success-solid: var(--mint-500);
+  --fg-on-success: var(--ink-fixed);
+  --shadow-success: var(--mint-shadow);
+
+  /* --- peligro */
+  --bg-danger-subtle: var(--coral-300);
+  --fg-danger: var(--coral-700);
+  --border-danger: var(--coral-600);
+  --bg-danger-solid: var(--coral-500);
+  --fg-on-danger: var(--ink-fixed);
+  --shadow-danger: var(--coral-shadow);
+
+  /* --- aviso */
+  --bg-warning-subtle: var(--amber-300);
+  --fg-warning: var(--amber-700);
+  --border-warning: var(--amber-600);
+  --bg-warning-solid: var(--amber-500);
+  --fg-on-warning: var(--ink-fixed);
+  --shadow-warning: var(--amber-shadow);
+
+  /* --- info */
+  --bg-info-subtle: var(--sky-300);
+  --fg-info: var(--sky-700);
+  --border-info: var(--sky-600);
+  --bg-info-solid: var(--sky-500);
+  --fg-on-info: var(--ink-fixed);
+  --shadow-info: var(--sky-shadow);
+
+  /* --- XP y acento. El lima nunca es texto por encima del -800. */
+  --bg-xp-solid: var(--lime-500);
+  --fg-on-xp: var(--ink-fixed);
+  --fg-xp: var(--lime-800);
+  --shadow-xp: var(--lime-shadow);
+  --bg-xp-subtle: var(--lime-300);
+
+  /* ------------------------------------------------------- anillo de foco
+   * El anillo lima simple de la especificación da 1.35:1 sobre papel e incumple WCAG 1.4.11.
+   * El compuesto cumple sobre CUALQUIER superficie: para toda S, al menos uno de los dos tonos supera
+   * 3:1, y el peor caso medido es 3.71:1 en Y≈0.158. El casing NO se deriva del color de marca. */
+  --focus-ring-inner: var(--lime-500);
+  --focus-ring-outer: var(--ink-fixed);
+  --focus-ring-offset: var(--bg-paper);
+
+  /* ------------------------------------------------------------- la racha
+   * `--streak-ink` se resuelve por atributo en <html>, no por prop: así un tick de racha no re-renderiza
+   * el árbol de la mascota ni arrastra el Camino con él. La punta de la cola de Cuati usa este token. */
+  --streak-ink: var(--ink-500);
+
+  /* ------------------------------------------------------------- radios */
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  /* ------------------------------------------- elevación sólida, sin blur
+   * Cinco niveles con asignación cerrada por componente. El `:active` de cada nivel consume exactamente
+   * su altura, y esa es la decisión real: el acoplamiento numérico entre translate-y y grosor de sombra. */
+  --e0: none;
+  --e1: 0 2px 0 0 var(--shadow-color);
+  --e2: 0 4px 0 0 var(--shadow-color);
+  --e3: 0 6px 0 0 var(--shadow-color);
+  --e4: 0 8px 0 0 var(--shadow-color);
+  --shadow-color: var(--line-400);
+  /* ÚNICA excepción con blur: overlays que flotan sobre fondo arbitrario. */
+  --overlay-shadow: 0 24px 48px -12px rgb(22 18 31 / 0.28);
+  --edge-highlight: none;
+
+  /* -------------------------------------------------------------- botón 3D */
+  --btn-h-sm: 44px;
+  --btn-h-md: 52px;
+  --btn-h-lg: 60px;
+  --btn-depth-sm: 3px;
+  --btn-depth-md: 4px;
+  --btn-depth-lg: 4px;
+
+  /* ------------------------------------------------------------ tipografía
+   * Alturas de línea múltiplos de 4: así el ritmo vertical del player y de las tablas del Studio
+   * coinciden sin ajustes manuales. */
+  --t-12: 0.75rem;    --lh-12: 1rem;      --tr-12: 0.02em;
+  --t-14: 0.875rem;   --lh-14: 1.25rem;   --tr-14: 0.005em;
+  --t-16: 1rem;       --lh-16: 1.5rem;    --tr-16: 0em;
+  --t-18: 1.125rem;   --lh-18: 1.75rem;   --tr-18: -0.003em;
+  --t-22: 1.375rem;   --lh-22: 1.75rem;   --tr-22: -0.008em;
+  --t-28: 1.75rem;    --lh-28: 2.25rem;   --tr-28: -0.012em;
+  --t-36: 2.25rem;    --lh-36: 2.5rem;    --tr-36: -0.018em;
+  --t-48: 3rem;       --lh-48: 3.25rem;   --tr-48: -0.024em;
+  --measure: 34rem;
+  /* Fredoka tiene la altura de x ~9.2% mayor que Nunito al mismo font-size. Se aplica SOLO a cifras
+   * display dentro de texto corrido; los títulos independientes no lo llevan, porque sus alturas de
+   * mayúscula sí coinciden (0.7% de diferencia) y encogerlos no tendría motivo. */
+  --display-optical: 0.92;
+
+  /* -------------------------------------------------- geometría compartida
+   * Los esqueletos leen estas mismas variables: cada aproximación de altura es un CLS. */
+  --header-h: 56px;
+  --bottomnav-h: calc(64px + env(safe-area-inset-bottom, 0px));
+  --node-pitch: 112px;
+  --row-h: 44px;
+  --impersonation-h: 0px;
+  --tap-min: 44px;
+}
+
+/* Tema oscuro. El @media envuelve al selector, jamás al revés. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg-raised: var(--paper-raised);
+    --border-strong: var(--line-control);
+    /* En oscuro la profundidad no se comunica por relleno: --paper sobre --canvas da 1.08:1, invisible.
+     * Se comunica con canto superior + sombra sólida + contorno. */
+    --shadow-color: #05030a;
+    --edge-highlight: inset 0 1px 0 rgb(244 241 255 / 0.1);
+    --overlay-shadow: 0 24px 48px -12px rgb(0 0 0 / 0.55);
+    /* El casing del anillo salta al claro: su trabajo es separar el anillo de elementos BRILLANTES,
+     * mientras el núcleo lima ya rinde 13.21:1 contra el papel oscuro. */
+    --focus-ring-offset: var(--bg-paper);
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg-raised: var(--paper-raised);
+  --border-strong: var(--line-control);
+  --shadow-color: #05030a;
+  --edge-highlight: inset 0 1px 0 rgb(244 241 255 / 0.1);
+  --overlay-shadow: 0 24px 48px -12px rgb(0 0 0 / 0.55);
+  --focus-ring-offset: var(--bg-paper);
+}
+
+/* --------------------------------------------------- color de sección
+ * Cada paleta viaja como PAR fill/on-fill y nunca se usa una sin la otra. `lime` no está en el enum:
+ * un admin no técnico no debe poder publicar un camino ilegible (DECISIONS.md R11). */
+[data-section='brand'] { --section-fill: var(--brand-600); --section-on-fill: var(--paper-fixed); }
+[data-section='grape'] { --section-fill: var(--grape-600); --section-on-fill: var(--paper-fixed); }
+[data-section='mint']  { --section-fill: var(--mint-700);  --section-on-fill: var(--paper-fixed); }
+[data-section='coral'] { --section-fill: var(--coral-600); --section-on-fill: var(--paper-fixed); }
+[data-section='amber'] { --section-fill: var(--amber-600); --section-on-fill: var(--paper-fixed); }
+[data-section='sky']   { --section-fill: var(--sky-600);   --section-on-fill: var(--paper-fixed); }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) [data-section='brand'] { --section-fill: var(--brand-400); --section-on-fill: var(--ink-fixed); }
+  :root:not([data-theme='light']) [data-section='grape'] { --section-fill: var(--grape-400); --section-on-fill: var(--ink-fixed); }
+  :root:not([data-theme='light']) [data-section='mint']  { --section-fill: var(--mint-400);  --section-on-fill: var(--ink-fixed); }
+  :root:not([data-theme='light']) [data-section='coral'] { --section-fill: var(--coral-400); --section-on-fill: var(--ink-fixed); }
+  :root:not([data-theme='light']) [data-section='amber'] { --section-fill: var(--amber-400); --section-on-fill: var(--ink-fixed); }
+  :root:not([data-theme='light']) [data-section='sky']   { --section-fill: var(--sky-400);   --section-on-fill: var(--ink-fixed); }
+}
+:root[data-theme='dark'] [data-section='brand'] { --section-fill: var(--brand-400); --section-on-fill: var(--ink-fixed); }
+:root[data-theme='dark'] [data-section='grape'] { --section-fill: var(--grape-400); --section-on-fill: var(--ink-fixed); }
+:root[data-theme='dark'] [data-section='mint']  { --section-fill: var(--mint-400);  --section-on-fill: var(--ink-fixed); }
+:root[data-theme='dark'] [data-section='coral'] { --section-fill: var(--coral-400); --section-on-fill: var(--ink-fixed); }
+:root[data-theme='dark'] [data-section='amber'] { --section-fill: var(--amber-400); --section-on-fill: var(--ink-fixed); }
+:root[data-theme='dark'] [data-section='sky']   { --section-fill: var(--sky-400);   --section-on-fill: var(--ink-fixed); }
+
+/* --------------------------------------------------------- la racha */
+:root[data-streak='cold']  { --streak-ink: var(--ink-500); }
+:root[data-streak='warm']  { --streak-ink: var(--amber-500); }
+:root[data-streak='hot']   { --streak-ink: var(--amber-500); }
+:root[data-streak='blaze'] { --streak-ink: var(--lime-500); }
+
+/* ================================================================ Tailwind
+ * Solo los alias SEMÁNTICOS generan utilidades. La palabra `inline` no es cosmética: sin ella Tailwind v4
+ * congela el valor resuelto en tiempo de build y el toggle de tema deja de funcionar en las utilidades. */
+@theme inline {
+  --color-canvas: var(--bg-canvas);
+  --color-paper: var(--bg-paper);
+  --color-raised: var(--bg-raised);
+
+  --color-fg: var(--fg-default);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-muted: var(--fg-muted);
+
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--bg-primary);
+  --color-on-primary: var(--fg-on-primary);
+  --color-primary-fg: var(--fg-primary);
+  --color-primary-subtle: var(--bg-primary-subtle);
+
+  --color-success: var(--bg-success-solid);
+  --color-success-fg: var(--fg-success);
+  --color-success-subtle: var(--bg-success-subtle);
+  --color-on-success: var(--fg-on-success);
+
+  --color-danger: var(--bg-danger-solid);
+  --color-danger-fg: var(--fg-danger);
+  --color-danger-subtle: var(--bg-danger-subtle);
+  --color-on-danger: var(--fg-on-danger);
+
+  --color-warning: var(--bg-warning-solid);
+  --color-warning-fg: var(--fg-warning);
+  --color-warning-subtle: var(--bg-warning-subtle);
+  --color-on-warning: var(--fg-on-warning);
+
+  --color-info: var(--bg-info-solid);
+  --color-info-fg: var(--fg-info);
+  --color-info-subtle: var(--bg-info-subtle);
+  --color-on-info: var(--fg-on-info);
+
+  --color-xp: var(--bg-xp-solid);
+  --color-xp-fg: var(--fg-xp);
+  --color-on-xp: var(--fg-on-xp);
+  --color-xp-subtle: var(--bg-xp-subtle);
+
+  --color-section-fill: var(--section-fill);
+  --color-section-on-fill: var(--section-on-fill);
+  --color-streak: var(--streak-ink);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-full: var(--r-full);
+
+  --font-display: var(--font-fredoka), ui-rounded, system-ui, -apple-system, sans-serif;
+  --font-text: var(--font-nunito), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --shadow-e1: var(--e1);
+  --shadow-e2: var(--e2);
+  --shadow-e3: var(--e3);
+  --shadow-e4: var(--e4);
+  --shadow-overlay: var(--overlay-shadow);
+}

@@ -1,0 +1,56 @@
+/* ============================================================================
+ * Cuati — paleta del personaje.
+ *
+ * DECISIÓN CENTRAL: el contorno no es un color, es un ROL — siempre el extremo del rango. En claro es el
+ * paso más oscuro; en oscuro es el más claro, y la escala se invierte completa. La mayoría de las mascotas
+ * conservan un contorno negro fijo en oscuro y se enlodan sobre el lienzo.
+ *
+ * El pelaje NO usa el color de marca. Lo único violeta es la bandana: con el default —mascota del color
+ * primario— el primer cliente white-label destruye el personaje. Aquí cambiar el primario cambia una prenda.
+ *
+ * El tono del pelaje se movió a 18.7° por HUECO MEDIDO: a 16° del ámbar de racha, en el header pegajoso y a
+ * 32px, el pelaje y el contador de racha se leían como la misma familia. Ningún token semántico ocupa esa
+ * banda (brand 285°, lime 126°, mint 157°, coral 15°, amber 75°, sky 233°), así que la mascota nunca
+ * comunica un estado del sistema por accidente.
+ * ========================================================================== */
+
+:root {
+  --mascot-700: #7a3719; /* contorno, anillos de cola, cejas — 8.15:1 sobre --canvas */
+  --mascot-600: #96461f; /* patas, morral, sombra de volumen */
+  --mascot-500: #b4552a; /* pelaje — 4.58:1 sobre --canvas */
+  --mascot-200: #ffe1c6; /* máscara facial, trompa, vientre, interior de oreja */
+  --mascot-ground: #cfc6e8; /* la sombra sólida del suelo: --line-200 daba 1.18:1 y era invisible */
+  /* La trufa y la boca viven SIEMPRE sobre --mascot-200, que es claro en los dos temas, así que su tinta
+   * no puede voltear con el tema. Mismo razonamiento que --ink-fixed. */
+  --mascot-ink: #16121f;
+  --mascot-sclera: #ffffff;
+  --mascot-spark: #b6f03c;
+}
+
+/* El @media envuelve al selector. Un selector con @media embebido es sintaxis inválida y el navegador
+ * descarta la regla COMPLETA, incluida la parte que sí era válida: la mascota se quedaría con contorno
+ * #7A3719 sobre el lienzo oscuro #100C1B, a 2.19:1, ilegible. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --mascot-700: #e8a377; /* contorno — 9.11:1 sobre --canvas oscuro */
+    --mascot-600: #c46236;
+    --mascot-500: #8c3e1c;
+    --mascot-200: #f6d9be;
+    --mascot-ground: #2e2542;
+  }
+}
+
+:root[data-theme='dark'] {
+  --mascot-700: #e8a377;
+  --mascot-600: #c46236;
+  --mascot-500: #8c3e1c;
+  --mascot-200: #f6d9be;
+  --mascot-ground: #2e2542;
+}
+
+/* La punta de la cola baja de opacidad al fallar: es el corazón perdido dicho en lenguaje de mascota,
+ * y sobrevive al movimiento reducido porque es opacidad, no desplazamiento. */
+.mascot-root[data-wrong='true'] .mascot-tail-tip {
+  opacity: 0.42;
+  transition: opacity 200ms linear;
+}

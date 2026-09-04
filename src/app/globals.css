@@ -1,0 +1,208 @@
+@import 'tailwindcss';
+@import '../design/tokens.generated.css';
+@import '../design/tokens.css';
+
+/* ============================================================================ base */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-canvas);
+  color: var(--fg-default);
+  font-family: var(--font-text);
+  font-size: var(--t-16);
+  line-height: var(--lh-16);
+  letter-spacing: var(--tr-16);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Números tabulares con ancho reservado. `tabular-nums` es el default y es insuficiente: funciona con
+ * algunas familias y falla con la mitad de las display de Google Fonts, así que el ancho por dígito lo
+ * reserva el componente `Odometer` en cajas de 1ch. */
+.u-counter {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+}
+
+/* Ajuste óptico: SOLO para cifras display dentro de texto corrido. Los títulos independientes no lo
+ * llevan porque sus alturas de mayúscula ya coinciden (0.7% de diferencia). */
+.u-optical {
+  font-size: calc(1em * var(--display-optical));
+}
+
+.u-measure {
+  max-width: var(--measure);
+}
+
+/* ================================================================== anillo de foco
+ *
+ * Compuesto: núcleo lima de 3px, 1px de offset del color de superficie y 1px exterior de casing en tinta.
+ * El lima solo da 1.35:1 sobre papel e incumple WCAG 1.4.11; el compuesto cumple sobre CUALQUIER
+ * superficie, con peor caso medido de 3.71:1 en Y≈0.158 (ver src/design/contrast.test.ts).
+ *
+ * El casing NO se deriva del color de marca: si lo heredara, heredaría también su fallo de contraste. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring-inner);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 5px var(--focus-ring-outer);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ==================================================================== shake / destello
+ *
+ * Con movimiento reducido el shake NO se convierte en un fade —un fade no comunica "error"— sino en un
+ * destello del borde. `fx.shake()` decide cuál poner. */
+@keyframes senda-shake-x {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-8px, 0, 0); }
+  32% { transform: translate3d(7px, 0, 0); }
+  52% { transform: translate3d(-5px, 0, 0); }
+  76% { transform: translate3d(3px, 0, 0); }
+}
+
+@keyframes senda-flash-border {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+[data-shake='x'] {
+  animation: senda-shake-x 320ms ease-in-out;
+}
+
+[data-shake='flash'] {
+  animation: senda-flash-border 240ms linear;
+  box-shadow: 0 0 0 3px var(--bg-danger-solid);
+}
+
+/* ============================================================== barrido de esqueleto
+ * `transform: translateX()` sobre un overlay, JAMÁS `background-position`: lo segundo repinta el fondo
+ * entero en cada frame. */
+@keyframes senda-shimmer {
+  from { transform: translate3d(-120%, 0, 0); }
+  to { transform: translate3d(220%, 0, 0); }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--border-default);
+  border-radius: var(--r-sm);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  animation: senda-shimmer 1.4s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; display: none; }
+  [data-shake='x'] { animation: senda-flash-border 240ms linear; }
+}
+
+/* ====================================================================== botón 3D
+ *
+ * La firma visual del producto, con SOLO transform.
+ *
+ * La especificación pide un `border-bottom` de 4px que pasa a 0 en `:active`. Eso invalida el box model del
+ * hijo en cada pulsación —layout + paint + composite— justo en la interacción más frecuente de toda la app:
+ * unas 200 pulsaciones por sesión. Aquí la sombra es una LOSA aparte, inmóvil, y lo único que se mueve es
+ * la cara. El borde inferior nunca existe como `border-width`. */
+.btn3d {
+  --btn-h: var(--btn-h-md);
+  --btn-depth: var(--btn-depth-md);
+  --btn-r: var(--r-md);
+  position: relative;
+  display: inline-block;
+  border: 0;
+  padding: 0;
+  background: none;
+  height: calc(var(--btn-h) + var(--btn-depth));
+  min-width: var(--tap-min);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn3d__shadow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--btn-depth);
+  bottom: 0;
+  border-radius: var(--btn-r);
+  background: var(--btn-shadow-color);
+}
+
+.btn3d__face {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--btn-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-inline: var(--btn-px);
+  border-radius: var(--btn-r);
+  background: var(--btn-face);
+  color: var(--btn-label);
+  box-shadow: var(--edge-highlight);
+  transform: translate3d(0, 0, 0);
+  transition: transform 60ms linear;
+  white-space: nowrap;
+}
+
+.btn3d:hover:not([aria-disabled='true']) .btn3d__face {
+  transform: translate3d(0, -1px, 0);
+}
+
+.btn3d:active .btn3d__face {
+  transform: translate3d(0, var(--btn-depth), 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn3d__face { transition-duration: 0ms; }
+}
+
+.btn3d[data-size='sm'] { --btn-h: var(--btn-h-sm); --btn-depth: var(--btn-depth-sm); --btn-r: var(--r-sm); --btn-px: 16px; font-size: var(--t-14); }
+.btn3d[data-size='md'] { --btn-h: var(--btn-h-md); --btn-depth: var(--btn-depth-md); --btn-r: var(--r-md); --btn-px: 20px; font-size: var(--t-16); }
+.btn3d[data-size='lg'] { --btn-h: var(--btn-h-lg); --btn-depth: var(--btn-depth-lg); --btn-r: var(--r-lg); --btn-px: 28px; font-size: var(--t-18); }
+
+.btn3d[data-variant='primary'] { --btn-face: var(--bg-primary);       --btn-label: var(--fg-on-primary); --btn-shadow-color: var(--shadow-primary); }
+/* El botón de éxito es LIMA CON TINTA, no verde con blanco: ese par obliga a bajar a un verde
+ * institucional oscuro para pasar AA, y el resultado es el opuesto exacto del wow. */
+.btn3d[data-variant='success'] { --btn-face: var(--bg-xp-solid);      --btn-label: var(--fg-on-xp);      --btn-shadow-color: var(--shadow-xp); }
+.btn3d[data-variant='danger']  { --btn-face: var(--bg-danger-solid);  --btn-label: var(--fg-on-danger);  --btn-shadow-color: var(--shadow-danger); }
+.btn3d[data-variant='ghost']   { --btn-face: var(--bg-paper);         --btn-label: var(--fg-primary);    --btn-shadow-color: var(--line-control); }
+/* `locked` es legible A PROPÓSITO: `opacity:.5` + `disabled` produce un gris ilegible, no enfocable, y el
+ * usuario nunca se entera de qué le falta. Aquí sigue enfocable y al pulsarlo hace el clunk. */
+.btn3d[data-variant='locked']  { --btn-face: var(--border-default);   --btn-label: var(--fg-subtle);     --btn-shadow-color: var(--line-control); --btn-depth: 2px; cursor: not-allowed; }
+
+.btn3d[data-full='true'] { display: block; width: 100%; }
+.btn3d[data-full='true'] .btn3d__face { padding-inline: 0; }
