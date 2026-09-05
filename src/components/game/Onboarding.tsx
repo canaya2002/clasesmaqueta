@@ -111,7 +111,7 @@ export function Onboarding() {
   if (step === 'bienvenida') {
     return (
       <Wrap step={1}>
-        <Mascot state="celebrate" size={160} />
+        <Mascot state="celebrate" size={96} />
         <h1 className="onb__title">Bienvenido a SENDA</h1>
         <p className="onb__body">
           Cinco minutos al día. Casos reales del despacho, no teoría. Empezamos por saber qué haces.
@@ -236,7 +236,7 @@ export function Onboarding() {
 
   return (
     <Wrap step={5}>
-      <Mascot state={result.creditedUnits > 0 ? 'celebrate' : 'idle'} size={160} />
+      <Mascot state={result.creditedUnits > 0 ? 'celebrate' : 'idle'} size={96} />
       <h1 className="onb__title">
         {result.creditedUnits > 0 ? `Te saltas ${String(result.creditedUnits)} unidades` : 'Empezamos por el principio'}
       </h1>

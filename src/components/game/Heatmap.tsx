@@ -12,8 +12,6 @@ import { dayKeyFromEpochDay } from '@/game/day';
  * la racha del HUD. Un heatmap con su propia fuente de días es el clásico "el calendario dice que practiqué
  * el martes y la racha dice que no".
  */
-const COLUMNS = Math.ceil(HISTORY_DAYS / 7);
-
 function level(xp: number): 0 | 1 | 2 | 3 | 4 {
   if (xp <= 0) return 0;
   if (xp < 30) return 1;
@@ -37,7 +35,7 @@ export function Heatmap() {
 
   return (
     <div>
-      <div className="heatmap" style={{ gridTemplateColumns: `repeat(${String(COLUMNS)}, 1fr)` }}>
+      <div className="heatmap">
         {cells.map((c) => (
           <span key={c.key} className="heatmap__cell" data-level={level(c.xp)} title={`${c.key}: ${String(c.xp)} XP`} />
         ))}

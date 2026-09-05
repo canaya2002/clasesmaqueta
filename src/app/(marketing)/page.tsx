@@ -42,10 +42,12 @@ const DOORS = [
 export default function MarketingPage(): React.ReactElement {
   return (
     <main className="landing">
-      {/* La silueta estática, no el rig animado. La landing es la única ruta con presupuesto de 132 KB y
-          montar `Mascot` la subía a 158: trae `motion`, las quince capas y la coreografía de nueve estados
-          para enseñar una pose fija. `MascotSolid` existe exactamente para esto. */}
-      <MascotSolid className="landing__mascot" fill="var(--bg-primary)" />
+      {/* La silueta estática, no el rig animado: la landing tiene presupuesto de 132 KB y montar `Mascot`
+          la subía a 158 para enseñar una pose fija.
+
+          Y va PEQUEÑA. Una mascota de 132 px de ancho encima de un título de 48 px convierte la portada en
+          un dibujo con texto debajo; el trabajo de la portada es explicar qué es esto en dos líneas. */}
+      <MascotSolid size={64} fill="var(--bg-primary)" />
       <h1 className="landing__title">SENDA</h1>
       <p className="landing__sub">
         Un repo, dos productos. La App que el alumno abre y el Studio con el que se administra: tres

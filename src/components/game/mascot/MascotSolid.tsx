@@ -8,15 +8,27 @@
 export function MascotSolid({
   className,
   fill = 'var(--fg-default)',
+  size = 96,
 }: {
   readonly className?: string;
   readonly fill?: string;
+  /** Ancho en píxeles. El alto sale de la proporción 160×200 del viewBox. */
+  readonly size?: number;
 }): React.ReactElement {
   return (
     <svg
       viewBox="0 0 160 200"
       className={className}
-      style={{ display: 'block', width: '100%', height: '100%' }}
+      /*
+       * El tamaño va como ATRIBUTO, no como estilo en línea.
+       *
+       * Antes llevaba `style={{ width: '100%', height: '100%' }}`, y un estilo en línea gana a cualquier
+       * clase: la regla `.landing__mascot { width: 132px }` no se aplicaba nunca y el SVG se estiraba al
+       * ancho completo de su contenedor. En una pantalla grande eso es una mascota de medio metro.
+       */
+      width={size}
+      height={Math.round((size * 200) / 160)}
+      style={{ display: 'block' }}
       aria-hidden="true"
     >
       <g fill={fill}>

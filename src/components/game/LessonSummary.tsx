@@ -57,7 +57,7 @@ export function LessonSummary({ result, headingRef, onContinue }: LessonSummaryP
         textAlign: 'center',
       }}
     >
-      <Mascot state={result.perfect ? 'celebrate' : 'correct'} size={160} />
+      <Mascot state={result.perfect ? 'celebrate' : 'correct'} size={96} />
 
       <h1 ref={headingRef} tabIndex={-1} style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--t-36)', margin: 0 }}>
         {result.perfect ? '¡Lección perfecta!' : '¡Lección completada!'}
