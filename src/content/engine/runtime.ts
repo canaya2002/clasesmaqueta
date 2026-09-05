@@ -47,6 +47,8 @@ export interface LessonRuntime {
   readonly refillHearts: () => void;
   readonly playSfx: (id: SessionSfxId) => void;
   readonly burst: (element: Element | null) => void;
+  /** Sacudida corta: la única forma de movimiento permitida en un control que NO puede avanzar. */
+  readonly nudge: (element: Element | null) => void;
   readonly persistAttempt: (attempt: Attempt) => void;
   readonly reportStep: (report: StepReport) => void;
 }

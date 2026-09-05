@@ -60,6 +60,7 @@ function makeRuntime(over: Partial<LessonRuntime> = {}): LessonRuntime {
     refillHearts: () => undefined,
     playSfx: () => undefined,
     burst: () => undefined,
+    nudge: () => undefined,
     persistAttempt: () => undefined,
     reportStep: () => undefined,
     ...over,

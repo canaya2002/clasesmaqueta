@@ -52,6 +52,8 @@ export const GOAL_OPTIONS: readonly { readonly minutes: number; readonly label: 
 export interface OnboardingState {
   readonly role: RoleChoice | null;
   readonly goalXp: number | null;
+  /** El alumno pidió empezar por el principio en vez de hacer el test. */
+  readonly testSkipped: boolean;
   /** Una entrada por pregunta contestada del test de nivel. */
   readonly probes: readonly { readonly unitIndex: number; readonly correct: boolean }[];
   readonly probeCount: number;
@@ -61,6 +63,7 @@ export interface OnboardingState {
 export const INITIAL: OnboardingState = {
   role: null,
   goalXp: null,
+  testSkipped: false,
   probes: [],
   probeCount: 0,
   finished: false,
@@ -70,6 +73,7 @@ export type OnboardingEvent =
   | { readonly type: 'PICK_ROLE'; readonly role: RoleChoice }
   | { readonly type: 'PICK_GOAL'; readonly xp: number }
   | { readonly type: 'PROBE'; readonly unitIndex: number; readonly correct: boolean }
+  | { readonly type: 'SKIP_TEST' }
   | { readonly type: 'FINISH' };
 
 export function onboardingReducer(state: OnboardingState, event: OnboardingEvent): OnboardingState {
@@ -84,24 +88,41 @@ export function onboardingReducer(state: OnboardingState, event: OnboardingEvent
         probes: [...state.probes, { unitIndex: event.unitIndex, correct: event.correct }],
         probeCount: state.probeCount + 1,
       };
+    case 'SKIP_TEST':
+      return { ...state, testSkipped: true };
     case 'FINISH':
       return { ...state, finished: true };
   }
 }
 
 /**
- * El paso más avanzado al que el estado da derecho.
+ * Lo que EXIGE cada paso, declarado uno por uno.
  *
- * Es lo que convierte `?paso=` en un parámetro seguro: la URL puede pedir cualquier paso y esta función
- * decide hasta dónde llega. Sin ella, pegar un enlace del paso 4 en un chat lleva a un test de nivel sin
- * curso elegido, que no sabe de qué unidades sacar las preguntas.
+ * La primera versión era una escalera de `if` que devolvía el paso más avanzado alcanzable, y estaba
+ * desplazada en uno: con el estado inicial devolvía `bienvenida`, así que pulsar "Empezar" ponía
+ * `?paso=puesto` y el recorte lo devolvía a `bienvenida`. Como los botones de puesto viven EN esa pantalla,
+ * no había forma de elegir uno, y por tanto nada se desbloqueaba nunca: la bienvenida entera estaba en
+ * bloqueo y todos sus controles muertos.
+ *
+ * Escrito así, cada paso dice su propia condición y el desplazamiento no puede volver: `puesto` no exige
+ * nada porque es simplemente "lo siguiente" de la bienvenida, no una recompensa.
  */
+const REQUIRES: Readonly<Record<StepName, (s: OnboardingState, probesNeeded: number) => boolean>> = {
+  bienvenida: () => true,
+  puesto: () => true,
+  meta: (s) => s.role !== null,
+  test: (s) => s.goalXp !== null,
+  listo: (s, needed) => s.finished || s.testSkipped || s.probeCount >= needed,
+};
+
+/** El paso más avanzado al que el estado da derecho. */
 export function furthestAllowed(state: OnboardingState, probesNeeded: number): StepName {
-  if (state.finished) return 'listo';
-  if (state.probeCount >= probesNeeded) return 'listo';
-  if (state.goalXp !== null) return 'test';
-  if (state.role !== null) return 'meta';
-  return 'bienvenida';
+  let furthest: StepName = 'bienvenida';
+  for (const step of STEPS) {
+    if (!REQUIRES[step](state, probesNeeded)) break;
+    furthest = step;
+  }
+  return furthest;
 }
 
 export function clampStep(requested: string | null, state: OnboardingState, probesNeeded: number): StepName {

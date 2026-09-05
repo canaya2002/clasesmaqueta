@@ -4,11 +4,24 @@ import { INITIAL, clampStep, furthestAllowed, onboardingReducer } from '../onboa
 const NEEDED = 4;
 
 describe('el onboarding', () => {
-  it('empieza en la bienvenida y no deja saltar', () => {
-    expect(furthestAllowed(INITIAL, NEEDED)).toBe('bienvenida');
-    // Un `?paso=test` pegado en la barra de direcciones no puede saltarse la elección de puesto: el test
-    // no sabría de qué unidades sacar las preguntas.
-    expect(clampStep('test', INITIAL, NEEDED)).toBe('bienvenida');
+  it('desde el estado inicial se puede llegar a elegir puesto, y no más lejos', () => {
+    // Esta aserción decía `'bienvenida'` y era el BUG: si el estado inicial no da derecho a `puesto`,
+    // pulsar "Empezar" se recorta de vuelta a la bienvenida y los botones de puesto —que viven en esa
+    // pantalla— nunca se pueden pulsar. La pantalla entera quedaba en bloqueo con la suite en verde.
+    expect(furthestAllowed(INITIAL, NEEDED)).toBe('puesto');
+    expect(clampStep('puesto', INITIAL, NEEDED)).toBe('puesto');
+
+    // Pero un `?paso=test` pegado en la barra de direcciones sí se recorta: el test de nivel no sabría de
+    // qué unidades sacar las preguntas sin un curso elegido.
+    expect(clampStep('test', INITIAL, NEEDED)).toBe('puesto');
+  });
+
+  it('saltarse el test lleva al resultado sin haberlo contestado', () => {
+    let s = onboardingReducer(INITIAL, { type: 'PICK_ROLE', role: 'recepcion' });
+    s = onboardingReducer(s, { type: 'PICK_GOAL', xp: 40 });
+    expect(clampStep('listo', s, NEEDED)).toBe('test');
+    s = onboardingReducer(s, { type: 'SKIP_TEST' });
+    expect(clampStep('listo', s, NEEDED)).toBe('listo');
   });
 
   it('cada elección abre exactamente un paso más', () => {

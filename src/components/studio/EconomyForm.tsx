@@ -39,24 +39,56 @@ const PROSPECTIVE: readonly Knob[] = [
   { key: 'priceHeartRefill', label: 'Precio de recargar', min: 0, max: 1000, help: 'Las compras hechas conservan su precio.' },
 ];
 
+/**
+ * El campo guarda su propio TEXTO mientras se escribe, y solo confirma al salir o con Enter.
+ *
+ * Confirmar en cada pulsación parecía más reactivo y hacía el campo inutilizable: para cambiar "XP del
+ * nivel 1 al 2" de 60 a 80 hay que teclear un 8, y 8 está por debajo del mínimo de 10, así que el valor se
+ * rechazaba, el campo volvía de golpe a 60 y el segundo dígito nunca llegaba. Con un mínimo de dos cifras,
+ * NINGÚN valor nuevo se podía teclear.
+ *
+ * Vaciar el campo tampoco confirma: un campo vacío es alguien a mitad de escribir, no un cero.
+ */
 function Field({ knob, value }: { readonly knob: Knob; readonly value: number }) {
+  const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const commit = (raw: string): void => {
+    setDraft(null);
+    if (raw.trim() === '') {
+      setError(null);
+      return;
+    }
+    const next = Number(raw);
+    if (!Number.isFinite(next)) {
+      setError('Eso no es un número');
+      return;
+    }
+    const r = updateEconomy({ [knob.key]: next });
+    setError(r.ok ? null : r.reason);
+  };
+
   return (
     <label className="econ-field">
       <span className="econ-field__label">{knob.label}</span>
       <input
         type="number"
+        inputMode="numeric"
         min={knob.min}
         max={knob.max}
-        value={value}
-        onChange={(e) => {
-          const next = Number(e.currentTarget.value);
-          if (!Number.isFinite(next)) return;
-          const r = updateEconomy({ [knob.key]: next });
-          setError(r.ok ? null : r.reason);
+        value={draft ?? String(value)}
+        onChange={(e) => setDraft(e.currentTarget.value)}
+        onBlur={(e) => commit(e.currentTarget.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commit(e.currentTarget.value);
+          }
         }}
       />
-      <span className="econ-field__help">{error ?? knob.help}</span>
+      <span className="econ-field__help">
+        {error ?? (draft !== null ? `Pulsa Enter o sal del campo para aplicar · ${String(knob.min)}–${String(knob.max)}` : knob.help)}
+      </span>
     </label>
   );
 }

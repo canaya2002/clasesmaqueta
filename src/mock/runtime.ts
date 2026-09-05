@@ -59,6 +59,10 @@ export function createSessionRuntime(opts: SessionRuntimeOptions): LessonRuntime
     burst: (element: Element | null) => {
       if (element !== null) fx.burst(element);
     },
+    nudge: (element: Element | null) => {
+      // `fx.shake` escribe un atributo, así que necesita un HTMLElement y no cualquier Element del DOM.
+      if (element instanceof HTMLElement) fx.shake(element);
+    },
     persistAttempt: (attempt: Attempt) => {
       if (opts.awardsProgress === false) return;
       appendJson('progress', attempt, ATTEMPT_LOG_CAP);
@@ -82,6 +86,10 @@ export function createPreviewRuntime(econ: EconomyConfig): LessonRuntime {
     },
     burst: (element: Element | null) => {
       if (element !== null) fx.burst(element);
+    },
+    nudge: (element: Element | null) => {
+      // `fx.shake` escribe un atributo, así que necesita un HTMLElement y no cualquier Element del DOM.
+      if (element instanceof HTMLElement) fx.shake(element);
     },
     persistAttempt: () => undefined,
     reportStep: () => undefined,

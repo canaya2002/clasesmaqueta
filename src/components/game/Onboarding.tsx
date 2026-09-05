@@ -222,7 +222,16 @@ export function Onboarding() {
             >
               Comprobar
             </Button3D>
-            <button type="button" className="onb__skip" onClick={() => go('listo')}>
+            <button
+              type="button"
+              className="onb__skip"
+              onClick={() => {
+                // Hace falta el evento: sin marcar el salto, `listo` sigue exigiendo el test contestado y
+                // el recorte devolvía al alumno a la misma pregunta. El botón existía y no hacía nada.
+                dispatch({ type: 'SKIP_TEST' });
+                go('listo');
+              }}
+            >
               Prefiero empezar desde el principio
             </button>
           </div>

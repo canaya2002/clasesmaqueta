@@ -208,7 +208,18 @@ export function LessonShell({ lesson, runtime, econ, onExit, onFinish }: LessonS
   const check = useCallback(() => {
     if (prepared === null || !prepared.ok || draft === null) return;
     if (state.phase !== 'answering') return;
-    if (!prepared.value.bound.canSubmit(draft)) return;
+
+    // Sin respuesta, el botón NO se queda callado.
+    //
+    // Antes salía de aquí en silencio: el control se veía apagado, se podía pulsar, y no pasaba nada. Un
+    // botón que no responde es indistinguible de uno roto, y quien no sabe que el ejercicio esperaba una
+    // selección se queda mirando la pantalla. Ahora lo dice y sacude el paso, que es la única forma de
+    // movimiento que el sistema permite en un control inerte.
+    if (!prepared.value.bound.canSubmit(draft)) {
+      liveRef.current.now('Todavía no has contestado. Elige una respuesta para continuar.');
+      if (stageRef.current !== null) runtime.nudge(stageRef.current);
+      return;
+    }
 
     send({ type: 'CHECK', atMs: mono() });
     const graded = prepared.value.bound.grade(draft);
@@ -230,7 +241,7 @@ export function LessonShell({ lesson, runtime, econ, onExit, onFinish }: LessonS
     // usuario de lector de pantalla pulsa lo que cree que sigue siendo Comprobar.
     const verdictText = graded.value.correct ? 'Correcto.' : 'Incorrecto.';
     liveRef.current.trailing(`${verdictText} Continuar.`);
-  }, [prepared, draft, state.phase, state.epoch, instanceId, rawStep, send]);
+  }, [prepared, draft, state.phase, state.epoch, instanceId, rawStep, send, runtime]);
 
   const advance = useCallback(() => {
     if (mono() - gradedAtMs < MIN_FEEDBACK_MS) return;
