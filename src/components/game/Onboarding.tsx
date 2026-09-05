@@ -104,7 +104,16 @@ export function Onboarding() {
     void setStep(next);
   };
 
-  if (catalog === null) return <div className="skeleton" style={{ height: 420 }} />;
+  /*
+   * El catálogo se exige SOLO donde hace falta: en el test de nivel.
+   *
+   * Antes bloqueaba la pantalla entera, así que `/bienvenida` se servía como un esqueleto y las cuatro
+   * pantallas que no necesitan datos —bienvenida, puesto, meta, resultado— tampoco aparecían hasta que el
+   * mundo mockeado terminara de construirse en el cliente. Si la hidratación fallaba por lo que fuera, el
+   * usuario se quedaba mirando un rectángulo gris: "no hace nada", literalmente.
+   *
+   * Ahora la primera pantalla llega en el HTML y el flujo sobrevive aunque el mundo tarde o falle.
+   */
 
   /* ------------------------------------------------------------------ los cinco pasos */
 
@@ -177,6 +186,18 @@ export function Onboarding() {
     );
   }
 
+  if (step === 'test' && catalog === null) {
+    return (
+      <Wrap step={4}>
+        <h1 className="onb__title">Preparando tu test</h1>
+        <div className="skeleton" style={{ height: 220, width: '100%', borderRadius: 20 }} />
+        <span className="sr-only" role="status">
+          Cargando las preguntas del test de nivel
+        </span>
+      </Wrap>
+    );
+  }
+
   if (step === 'test' && probe !== undefined && prepared !== null) {
     return (
       <Wrap step={4}>
@@ -240,7 +261,7 @@ export function Onboarding() {
     );
   }
 
-  const total = role === null ? 26 : (catalog.unitsByCourse[role.courseIndex] ?? 26);
+  const total = role === null ? 26 : (catalog?.unitsByCourse[role.courseIndex] ?? 26);
   const result = placementResult(state.probes, total);
 
   return (
